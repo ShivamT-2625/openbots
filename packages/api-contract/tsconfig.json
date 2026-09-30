@@ -1,0 +1,10 @@
+{
+  "extends": "@openbots/typescript-config/library.json",
+  "compilerOptions": {
+    "paths": {
+      "@openbots/api-contract/*": ["./src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}
