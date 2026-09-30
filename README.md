@@ -1,21 +1,21 @@
-# shadcn/ui monorepo template
+# OpenBots
 
-This is a Next.js monorepo template with shadcn/ui.
+> 🚧 **OpenBots is currently in active development.**
 
-## Adding components
+OpenBots is a platform for creating **personal AI agents** that can work on your behalf.
 
-To add components to your app, run the following command at the root of your `web` app:
+Create multiple AI bots with different personalities, skills, and responsibilities. Connect them to the apps and services you already use, then let them handle tasks, workflows, and everyday digital work for you.
 
-```bash
-pnpm dlx shadcn@latest add button -c apps/web
-```
+### Why OpenBots?
 
-This will place the ui components in the `packages/ui/src/components` directory.
+* 🤖 **Multiple AI agents** — Create specialized bots for different tasks.
+* 🧠 **Personalities & skills** — Customize how each agent thinks and works.
+* 🔌 **App integrations** — Connect your agents to the tools you already use.
+* ⚡ **Autonomous work** — Let agents execute tasks and workflows on your behalf.
+* 🔒 **Secure by default** — Built with security and user control as core principles.
+* 🏠 **Self-hostable** — Run OpenBots on your own infrastructure.
+* 🆓 **Free & open** — No mandatory paid service required to run your own instance.
 
-## Using components
+OpenBots is designed to give people their own **AI workforce** without giving up control over their data or infrastructure.
 
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button";
-```
+> **Note:** OpenBots is still under active development and is not production-ready yet.
