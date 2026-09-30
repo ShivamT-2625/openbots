@@ -1,0 +1,10 @@
+{
+  "extends": "@openbots/typescript-config/library.json",
+  "compilerOptions": {
+    "paths": {
+      "@openbots/db/*": ["./src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}
