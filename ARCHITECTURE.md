@@ -4,43 +4,61 @@
 
 ```
 apps/
-  web/          → Next.js frontend (existing)
-  api/          → Thin Bun HTTP server (deployment entrypoint)
+  web/              → Next.js frontend
+  api/              → Thin Bun HTTP server (deployment entrypoint only)
 
 packages/
-  api/          → Hono app, routes, middleware (reusable implementation)
-  api-client/   → Typed hc<AppType>() client for frontend consumption
-  api-contracts/→ Shared Zod schemas, enums, types (browser-safe)
-  db/           → Drizzle ORM + PostgreSQL (server-only)
-  ui/           → Shared React components (existing)
+  api-contract/     → Hono app, domain routes, schemas, logic (reusable implementation)
+  api-client/       → Typed hc<AppType>() client for frontend consumption
+  db/               → Drizzle ORM + PostgreSQL (server-only)
+  ui/               → Shared React components
 ```
 
 ## Dependency Graph
 
 ```
-apps/web ──→ @openbots/api-client ──→ @openbots/api ──→ @openbots/db
-                   │                        │
-                   └──→ @openbots/api-contracts ←──┘
+apps/web ──→ @openbots/api-client ──→ @openbots/api-contract ──→ @openbots/db
 
-apps/api ──→ @openbots/api
+apps/api ──→ @openbots/api-contract ──→ @openbots/db
 ```
 
 **Hard rules:**
 - `apps/web` never imports from `apps/api` or `@openbots/db`
-- `apps/api` is a thin entrypoint — all logic lives in `@openbots/api`
-- `@openbots/api-client` and `@openbots/api-contracts` are browser-safe
-- `@openbots/api` and `@openbots/db` are server-only
+- `apps/api` is a thin deployment entrypoint — all logic lives in `@openbots/api-contract`
+- `@openbots/api-client` is browser-safe
+- `@openbots/api-contract` and `@openbots/db` are server-only
+
+## Route Organization
+
+Each domain follows a three-file convention inside `packages/api-contract/src/routes/`:
+
+```
+routes/
+├── agents/
+│   ├── agents.schema.ts    ← Zod schemas, types, enums
+│   ├── agents.route.ts     ← Hono route definitions
+│   └── agents.logic.ts     ← Domain/application logic
+├── tasks/
+├── runs/
+└── connections/
+```
+
+- **`*.schema.ts`** — request/response validation and public data schemas
+- **`*.route.ts`** — Hono route handlers, HTTP concerns, middleware
+- **`*.logic.ts`** — domain logic called by routes; database access goes here
+
+Route handlers delegate to the logic layer. The logic layer uses `@openbots/db` for persistence.
 
 ## Why This Architecture
 
-### `apps/api` is thin, `packages/api` has the logic
-The API implementation (`packages/api`) is a reusable Hono application. `apps/api` just imports it and exposes it through Bun's HTTP server. This means the same API can be mounted in tests, serverless functions, or other runtimes without duplicating code.
+### `apps/api` is thin, `packages/api-contract` has the logic
+The API implementation lives in `packages/api-contract` as a reusable Hono application. `apps/api` just imports it and exposes it through Bun's HTTP server. The same API can be mounted in tests, serverless functions, or other runtimes without duplicating code.
 
 ### `apps/web` talks through `packages/api-client`
-The web app communicates with the API exclusively through `@openbots/api-client`, which provides end-to-end type safety via Hono's `hc<AppType>()` RPC client. The web app never imports server-only code.
+The web app communicates with the API exclusively through `@openbots/api-client`, which provides end-to-end type safety via Hono's `hc<AppType>()` RPC client.
 
-### `packages/api-contracts` holds shared validation
-Public Zod schemas and enums live in `@openbots/api-contracts`. Both the API routes and the client can use these for validation without pulling in server dependencies. If a type can be inferred from Hono's route definitions via `AppType`, prefer that over duplicating it here.
+### `packages/api-contract` is more than types
+Despite the name, `api-contract` contains the full Hono route definitions, validation schemas, and domain logic. It is the reusable API implementation that any deployment entrypoint can mount.
 
 ## Environment Variables
 
@@ -53,37 +71,33 @@ Public Zod schemas and enums live in `@openbots/api-contracts`. Both the API rou
 ## Getting Started
 
 ```bash
-# Install dependencies
 bun install
-
-# Typecheck everything
-bun run typecheck
 
 # Start the API server
 cd apps/api && bun run dev
 
 # Start the web app (separate terminal)
 cd apps/web && bun run dev
+
+# Verify
+curl http://localhost:3001/api/health
 ```
 
 ## Adding New Routes
 
-1. Add Zod schemas to `packages/api-contracts/src/<resource>.ts`
-2. Create route module in `packages/api/src/routes/<resource>.ts`
-3. Mount the route in `packages/api/src/app.ts`
-4. The client picks up the new types automatically via `AppType`
+1. Create `packages/api-contract/src/routes/<domain>/<domain>.schema.ts`
+2. Create `packages/api-contract/src/routes/<domain>/<domain>.logic.ts`
+3. Create `packages/api-contract/src/routes/<domain>/<domain>.route.ts`
+4. Mount the route in `packages/api-contract/src/index.ts`
+5. The client picks up the new types automatically via `AppType`
 
 ## Database
 
-The database package uses Drizzle ORM with `postgres.js` driver, configured for Supabase PostgreSQL (or any standard PostgreSQL). Schema files go in `packages/db/src/schema/`.
+Drizzle ORM with `postgres.js` driver, configured for Supabase PostgreSQL (or any standard PostgreSQL). Schema files go in `packages/db/src/schemas/`.
 
 ```bash
-# Generate migrations
-cd packages/db && bun run db:generate
-
-# Push schema changes
-cd packages/db && bun run db:push
-
-# Open Drizzle Studio
-cd packages/db && bun run db:studio
+cd packages/db
+bun run db:generate    # Generate migrations
+bun run db:push        # Push schema changes
+bun run db:studio      # Open Drizzle Studio
 ```
