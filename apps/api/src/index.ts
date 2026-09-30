@@ -1,4 +1,4 @@
-import { app } from "@openbots/api"
+import { app } from "@openbots/api-contract"
 
 const port = parseInt(process.env.PORT ?? "3001", 10)
 
