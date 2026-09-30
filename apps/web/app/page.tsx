@@ -1,4 +1,4 @@
-import { Button } from "@openbots/ui/components/button"
+import { Button } from "@openbots/ui/components/button";
 
 export default function Page() {
   return (
@@ -15,5 +15,5 @@ export default function Page() {
         </div>
       </div>
     </div>
-  )
+  );
 }
