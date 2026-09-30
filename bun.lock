@@ -17,7 +17,7 @@
       "name": "api",
       "version": "0.0.1",
       "dependencies": {
-        "@openbots/api": "workspace:*",
+        "@openbots/api-contract": "workspace:*",
         "hono": "^4.7.11",
       },
       "devDependencies": {
@@ -50,30 +50,11 @@
         "typescript": "^5",
       },
     },
-    "packages/api": {
-      "name": "@openbots/api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@hono/zod-validator": "^0.5.0",
-        "@openbots/api-contracts": "workspace:*",
-        "@openbots/db": "workspace:*",
-        "hono": "^4.7.11",
-        "zod": "^4.6.5",
-      },
-      "devDependencies": {
-        "@openbots/eslint-config": "workspace:*",
-        "@openbots/typescript-config": "workspace:*",
-        "@types/node": "^20",
-        "eslint": "^10",
-        "typescript": "^5",
-      },
-    },
     "packages/api-client": {
       "name": "@openbots/api-client",
       "version": "0.0.0",
       "dependencies": {
-        "@openbots/api": "workspace:*",
-        "@openbots/api-contracts": "workspace:*",
+        "@openbots/api-contract": "workspace:*",
         "hono": "^4.7.11",
       },
       "devDependencies": {
@@ -84,10 +65,13 @@
         "typescript": "^5",
       },
     },
-    "packages/api-contracts": {
-      "name": "@openbots/api-contracts",
+    "packages/api-contract": {
+      "name": "@openbots/api-contract",
       "version": "0.0.0",
       "dependencies": {
+        "@hono/zod-validator": "^0.5.0",
+        "@openbots/db": "workspace:*",
+        "hono": "^4.7.11",
         "zod": "^4.6.5",
       },
       "devDependencies": {
@@ -465,11 +449,9 @@
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
-    "@openbots/api": ["@openbots/api@workspace:packages/api"],
-
     "@openbots/api-client": ["@openbots/api-client@workspace:packages/api-client"],
 
-    "@openbots/api-contracts": ["@openbots/api-contracts@workspace:packages/api-contracts"],
+    "@openbots/api-contract": ["@openbots/api-contract@workspace:packages/api-contract"],
 
     "@openbots/db": ["@openbots/db@workspace:packages/db"],
 
