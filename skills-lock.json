@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "biomejs": {
+      "source": "aiko-atami/biomejs-skill",
+      "sourceType": "github",
+      "skillPath": "skills/biomejs/SKILL.md",
+      "computedHash": "547c94e012fdcb9b23994e46ca788c27ab42620f8c92d041ca86d1ae62f717b1"
+    }
+  }
+}
