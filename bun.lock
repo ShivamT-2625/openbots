@@ -5,8 +5,8 @@
     "": {
       "name": "next-monorepo",
       "devDependencies": {
-        "@workspace/eslint-config": "workspace:*",
-        "@workspace/typescript-config": "workspace:*",
+        "@openbots/eslint-config": "workspace:*",
+        "@openbots/typescript-config": "workspace:*",
         "prettier": "^3.9.9",
         "prettier-plugin-tailwindcss": "^0.8.1",
         "turbo": "^2.11.5",
@@ -18,7 +18,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@tabler/icons-react": "^3.48.0",
-        "@workspace/ui": "workspace:*",
+        "@openbots/ui": "workspace:*",
         "next": "16.3.6",
         "next-themes": "^0.4.6",
         "react": "19.2.8",
@@ -29,14 +29,14 @@
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
-        "@workspace/eslint-config": "workspace:^",
-        "@workspace/typescript-config": "workspace:*",
+        "@openbots/eslint-config": "workspace:^",
+        "@openbots/typescript-config": "workspace:*",
         "eslint": "^10",
         "typescript": "^5",
       },
     },
     "packages/eslint-config": {
-      "name": "@workspace/eslint-config",
+      "name": "@openbots/eslint-config",
       "version": "0.0.0",
       "devDependencies": {
         "@babel/core": "^8.0.1",
@@ -53,11 +53,11 @@
       },
     },
     "packages/typescript-config": {
-      "name": "@workspace/typescript-config",
+      "name": "@openbots/typescript-config",
       "version": "0.0.0",
     },
     "packages/ui": {
-      "name": "@workspace/ui",
+      "name": "@openbots/ui",
       "version": "0.0.0",
       "dependencies": {
         "@base-ui/react": "^1.8.0",
@@ -77,8 +77,8 @@
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
-        "@workspace/eslint-config": "workspace:*",
-        "@workspace/typescript-config": "workspace:*",
+        "@openbots/eslint-config": "workspace:*",
+        "@openbots/typescript-config": "workspace:*",
         "eslint": "^10",
         "tailwindcss": "^4",
         "typescript": "^5",
@@ -452,11 +452,11 @@
 
     "@types/validate-npm-package-name": ["@types/validate-npm-package-name@4.0.2", "", {}, "sha512-lrpDziQipxCEeK5kWxvljWYhUvOiB2A9izZd9B2AFarYAkqZshb4lPbRs7zKEic6eGtH8V/2qJW+dPp9OtF6bw=="],
 
-    "@workspace/eslint-config": ["@workspace/eslint-config@workspace:packages/eslint-config"],
+    "@openbots/eslint-config": ["@openbots/eslint-config@workspace:packages/eslint-config"],
 
-    "@workspace/typescript-config": ["@workspace/typescript-config@workspace:packages/typescript-config"],
+    "@openbots/typescript-config": ["@openbots/typescript-config@workspace:packages/typescript-config"],
 
-    "@workspace/ui": ["@workspace/ui@workspace:packages/ui"],
+    "@openbots/ui": ["@openbots/ui@workspace:packages/ui"],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 

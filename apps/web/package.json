@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",
-    "@workspace/ui": "workspace:*",
+    "@openbots/ui": "workspace:*",
     "next": "16.3.6",
     "next-themes": "^0.4.6",
     "react": "19.2.8",
@@ -24,8 +24,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@workspace/eslint-config": "workspace:^",
-    "@workspace/typescript-config": "workspace:*",
+    "@openbots/eslint-config": "workspace:^",
+    "@openbots/typescript-config": "workspace:*",
     "eslint": "^10",
     "typescript": "^5"
   }
