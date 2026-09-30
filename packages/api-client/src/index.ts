@@ -1,7 +1,7 @@
 import { hc } from "hono/client"
-import type { AppType } from "@openbots/api"
+import type { AppType } from "@openbots/api-contract"
 
-export type { AppType } from "@openbots/api"
+export type { AppType } from "@openbots/api-contract"
 
 function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL
@@ -18,5 +18,7 @@ export function createClient(baseUrl?: string) {
   const url = baseUrl ?? getApiBaseUrl()
   return hc<AppType>(url)
 }
+
+export const api = createClient
 
 export type Client = ReturnType<typeof createClient>
