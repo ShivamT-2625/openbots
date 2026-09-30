@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openbots/api": "workspace:*",
+    "@openbots/api-contract": "workspace:*",
     "hono": "^4.7.11"
   },
   "devDependencies": {
