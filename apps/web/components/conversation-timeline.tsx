@@ -1,19 +1,19 @@
-"use client";
+"use client"
 
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@openbots/ui/components/alert";
-import { Badge } from "@openbots/ui/components/badge";
-import { Bubble, BubbleContent } from "@openbots/ui/components/bubble";
-import { Button } from "@openbots/ui/components/button";
-import { Blobatar } from "@openbots/ui/components/ui/blobatar";
+} from "@openbots/ui/components/alert"
+import { Badge } from "@openbots/ui/components/badge"
+import { Bubble, BubbleContent } from "@openbots/ui/components/bubble"
+import { Button } from "@openbots/ui/components/button"
+import { Blobatar } from "@openbots/ui/components/ui/blobatar"
 import {
   Marker,
   MarkerContent,
   MarkerIcon,
-} from "@openbots/ui/components/marker";
+} from "@openbots/ui/components/marker"
 
 import {
   Message,
@@ -22,7 +22,7 @@ import {
   MessageFooter,
   MessageGroup,
   MessageHeader,
-} from "@openbots/ui/components/message";
+} from "@openbots/ui/components/message"
 
 import {
   MessageScroller,
@@ -31,9 +31,9 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
-} from "@openbots/ui/components/message-scroller";
+} from "@openbots/ui/components/message-scroller"
 
-import { Spinner } from "@openbots/ui/components/spinner";
+import { Spinner } from "@openbots/ui/components/spinner"
 import {
   IconAlertCircle,
   IconCheck,
@@ -42,53 +42,53 @@ import {
   IconRobot,
   IconUser,
   IconX,
-} from "@tabler/icons-react";
-import { ExecutionStepsCard, type StepItem } from "./execution-steps-card";
-import type { RunRecord } from "./run-history-sheet";
+} from "@tabler/icons-react"
+import { ExecutionStepsCard, type StepItem } from "./execution-steps-card"
+import type { RunRecord } from "./run-history-sheet"
 
 export type MessageItem = {
-  id: string;
-  conversationId: string;
-  role: "system" | "user" | "assistant" | "tool";
-  content: unknown;
-  createdAt: string | Date;
-};
+  id: string
+  conversationId: string
+  role: "system" | "user" | "assistant" | "tool"
+  content: unknown
+  createdAt: string | Date
+}
 
 interface ConversationTimelineProps {
-  messages: MessageItem[];
-  activeRun: RunRecord | null;
-  activeRunSteps: StepItem[];
-  onCancelRun?: () => void;
-  isCancelling?: boolean;
-  agentName: string;
+  messages: MessageItem[]
+  activeRun: RunRecord | null
+  activeRunSteps: StepItem[]
+  onCancelRun?: () => void
+  isCancelling?: boolean
+  agentName: string
 }
 
 function getMessageText(content: unknown): string {
-  if (content === null || content === undefined) return "";
-  if (typeof content === "string") return content;
+  if (content === null || content === undefined) return ""
+  if (typeof content === "string") return content
   if (typeof content === "object") {
-    const obj = content as Record<string, unknown>;
-    if (typeof obj.text === "string") return obj.text;
-    if (typeof obj.prompt === "string") return obj.prompt;
-    return JSON.stringify(obj, null, 2);
+    const obj = content as Record<string, unknown>
+    if (typeof obj.text === "string") return obj.text
+    if (typeof obj.prompt === "string") return obj.prompt
+    return JSON.stringify(obj, null, 2)
   }
-  return String(content);
+  return String(content)
 }
 
 function formatMsgTime(dateVal: string | Date): string {
   try {
-    const d = new Date(dateVal);
+    const d = new Date(dateVal)
     const dateStr = d.toLocaleDateString([], {
       month: "short",
       day: "numeric",
-    });
+    })
     const timeStr = d.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
-    });
-    return `${dateStr}, ${timeStr}`;
+    })
+    return `${dateStr}, ${timeStr}`
   } catch {
-    return "";
+    return ""
   }
 }
 
@@ -101,13 +101,13 @@ export function ConversationTimeline({
   agentName,
 }: ConversationTimelineProps) {
   const isActiveRunOngoing =
-    activeRun?.status === "queued" || activeRun?.status === "running";
+    activeRun?.status === "queued" || activeRun?.status === "running"
 
   return (
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="flex-1">
-        <MessageScrollerViewport className="px-4 py-6">
-          <MessageScrollerContent className="mx-auto max-w-3xl space-y-6">
+        <MessageScrollerViewport className="border-none! px-4 py-6 ring-2! outline-none!">
+          <MessageScrollerContent className="mx-auto max-w-4xl space-y-6">
             {messages.length === 0 && !activeRun && (
               <MessageScrollerItem>
                 <div className="py-16 text-center">
@@ -128,25 +128,25 @@ export function ConversationTimeline({
             {/* Existing Persisted Messages */}
             <MessageGroup>
               {messages.map((msg) => {
-                const isUser = msg.role === "user";
-                const text = getMessageText(msg.content);
+                const isUser = msg.role === "user"
+                const text = getMessageText(msg.content)
 
                 return (
                   <MessageScrollerItem key={msg.id} scrollAnchor={isUser}>
                     <Message align={isUser ? "end" : "start"} className="gap-2">
                       <MessageContent>
                         <Bubble
-                          variant={isUser ? "secondary" : "outline"}
+                          variant={isUser ? "default" : "secondary"}
                           align={isUser ? "end" : "start"}
                         >
-                          <BubbleContent className="p-3 text-xs leading-relaxed text-foreground whitespace-pre-wrap sm:text-sm">
+                          <BubbleContent className="typeset p-3 text-xs leading-relaxed whitespace-pre-wrap text-foreground sm:text-sm">
                             {text}
                           </BubbleContent>
                         </Bubble>
 
                         {isUser ? (
-                          <MessageFooter className="gap-2 px-1 pt-0.5 justify-end">
-                            <span className="font-medium text-xs text-foreground">
+                          <MessageFooter className="justify-end gap-2 px-1 pt-0.5">
+                            <span className="text-xs font-medium text-foreground">
                               You
                             </span>
                             <span className="text-[10px] text-muted-foreground">
@@ -157,9 +157,9 @@ export function ConversationTimeline({
                           <MessageFooter className="gap-2 px-1 pt-0.5">
                             <Blobatar
                               name={agentName}
-                              className="size-4.5 shrink-0"
+                              className="size-6 shrink-0"
                             />
-                            <span className="font-medium text-xs text-foreground">
+                            <span className="text-xs font-medium text-foreground">
                               {agentName}
                             </span>
                             <span className="text-[10px] text-muted-foreground">
@@ -170,7 +170,7 @@ export function ConversationTimeline({
                       </MessageContent>
                     </Message>
                   </MessageScrollerItem>
-                );
+                )
               })}
             </MessageGroup>
 
@@ -179,44 +179,24 @@ export function ConversationTimeline({
               <MessageScrollerItem scrollAnchor>
                 <div className="space-y-3 py-1">
                   {/* Status Indicator using Marker */}
-                  <div className="flex items-center justify-between">
-                    <Marker className="text-xs">
-                      <MarkerIcon>
-                        {activeRun.status === "queued" && (
-                          <IconClock className="size-3.5 text-muted-foreground" />
-                        )}
-                        {activeRun.status === "running" && (
-                          <Spinner className="size-3.5 text-primary" />
-                        )}
-                      </MarkerIcon>
-                      <MarkerContent>
-                        {activeRun.status === "queued" &&
-                          "Queued for execution"}
-                        {activeRun.status === "running" && (
-                          <span className="text-foreground font-medium">
-                            {agentName} is thinking...
-                          </span>
-                        )}
-                      </MarkerContent>
-                    </Marker>
-
-                    {onCancelRun && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onCancelRun}
-                        disabled={isCancelling}
-                        className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-destructive"
-                      >
-                        {isCancelling ? (
-                          <Spinner className="size-2.5" />
-                        ) : (
-                          <IconPlayerStop className="size-3" />
-                        )}
-                        <span>Stop</span>
-                      </Button>
-                    )}
-                  </div>
+                  <Marker className="text-xs">
+                    <MarkerIcon>
+                      {activeRun.status === "queued" && (
+                        <IconClock className="size-3.5 text-muted-foreground" />
+                      )}
+                      {activeRun.status === "running" && (
+                        <Spinner className="size-3.5 text-primary" />
+                      )}
+                    </MarkerIcon>
+                    <MarkerContent>
+                      {activeRun.status === "queued" && "Queued for execution"}
+                      {activeRun.status === "running" && (
+                        <span className="font-medium text-foreground">
+                          {agentName} is thinking...
+                        </span>
+                      )}
+                    </MarkerContent>
+                  </Marker>
 
                   {/* Execution Tool Steps */}
                   <ExecutionStepsCard
@@ -263,5 +243,5 @@ export function ConversationTimeline({
         <MessageScrollerButton />
       </MessageScroller>
     </MessageScrollerProvider>
-  );
+  )
 }

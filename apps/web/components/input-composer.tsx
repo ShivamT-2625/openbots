@@ -44,8 +44,8 @@ export function InputComposer({
   };
 
   return (
-    <div className="w-full border-t border-border bg-background/95 p-3 backdrop-blur-xs sm:p-4">
-      <div className="mx-auto max-w-3xl">
+    <div className="w-full bg-background/95 p-3 backdrop-blur-xs sm:p-4">
+      <div className="mx-auto max-w-4xl">
         <form onSubmit={handleSubmit} className="relative flex flex-col gap-2">
           <div className="relative rounded-xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
             <Textarea

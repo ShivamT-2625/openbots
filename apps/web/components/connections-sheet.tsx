@@ -3,8 +3,6 @@
 import { Badge } from "@openbots/ui/components/badge";
 import { Button } from "@openbots/ui/components/button";
 import { Card, CardContent } from "@openbots/ui/components/card";
-import { Field, FieldGroup, FieldLabel } from "@openbots/ui/components/field";
-import { Input } from "@openbots/ui/components/input";
 import { ScrollArea } from "@openbots/ui/components/scroll-area";
 import {
   Sheet,
@@ -14,9 +12,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@openbots/ui/components/sheet";
-
 import { Spinner } from "@openbots/ui/components/spinner";
-import { IconPlug, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+  IconBrandGmail,
+  IconBrandNotion,
+  IconCheck,
+  IconPlug,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { getClient } from "@/lib/api";
@@ -26,13 +30,30 @@ interface ConnectionsSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const AVAILABLE_INTEGRATIONS = [
+  {
+    id: "gmail",
+    name: "Gmail",
+    description: "Send emails, draft replies, and query inbox messages.",
+    icon: IconBrandGmail,
+    provider: "composio",
+    accountId: "gmail_connected_account",
+  },
+  {
+    id: "notion",
+    name: "Notion",
+    description: "Read, write, search, and update databases and docs.",
+    icon: IconBrandNotion,
+    provider: "composio",
+    accountId: "notion_connected_account",
+  },
+] as const;
+
 export function ConnectionsSheet({
   open,
   onOpenChange,
 }: ConnectionsSheetProps) {
   const queryClient = useQueryClient();
-  const [provider, setProvider] = React.useState("composio");
-  const [externalAccountId, setExternalAccountId] = React.useState("");
 
   const { data: connectionsData, isLoading } = useQuery({
     queryKey: ["connections"],
@@ -53,21 +74,25 @@ export function ConnectionsSheet({
     enabled: open,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      if (!externalAccountId.trim()) return;
+  const connectMutation = useMutation({
+    mutationFn: async ({
+      provider,
+      externalAccountId,
+    }: {
+      provider: string;
+      externalAccountId: string;
+    }) => {
       const client = getClient();
       const res = await client.api.connections.$post({
         json: {
           provider,
-          externalAccountId: externalAccountId.trim(),
+          externalAccountId,
         },
       });
-      if (!res.ok) throw new Error("Failed to add connection");
+      if (!res.ok) throw new Error("Failed to connect integration");
       return res.json();
     },
     onSuccess: () => {
-      setExternalAccountId("");
       queryClient.invalidateQueries({ queryKey: ["connections"] });
     },
   });
@@ -78,7 +103,7 @@ export function ConnectionsSheet({
       const res = await client.api.connections[":id"].$delete({
         param: { id },
       });
-      if (!res.ok) throw new Error("Failed to delete connection");
+      if (!res.ok) throw new Error("Failed to disconnect integration");
       return res.json();
     },
     onSuccess: () => {
@@ -94,55 +119,109 @@ export function ConnectionsSheet({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <IconPlug className="size-4" />
-            Connected Integrations
+            Integrations & Connections
           </SheetTitle>
           <SheetDescription>
-            Manage authenticated third-party SaaS integrations (Composio,
-            GitHub, Slack) available to your agents.
+            One-click connect your third-party SaaS tools so your autonomous
+            agents can take real-world actions.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 py-3 flex-1 overflow-hidden">
-          <form
-            id="add-connection-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              createMutation.mutate();
-            }}
-            className="rounded-lg border border-border/70 p-3 bg-muted/20 space-y-3 shrink-0"
-          >
-            <span className="text-xs font-semibold text-foreground">
-              Add Integration Connection
+        <div className="flex flex-col gap-4 py-4 flex-1 overflow-hidden">
+          <div className="space-y-3">
+            <span className="text-xs font-semibold text-foreground tracking-tight">
+              Supported Integrations
             </span>
-            <FieldGroup className="gap-2">
-              <Field>
-                <FieldLabel htmlFor="conn-provider">Provider</FieldLabel>
-                <Input
-                  id="conn-provider"
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value)}
-                  placeholder="composio / github / slack"
-                  className="h-8 text-xs"
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="conn-acc">Account / Session ID</FieldLabel>
-                <Input
-                  id="conn-acc"
-                  value={externalAccountId}
-                  onChange={(e) => setExternalAccountId(e.target.value)}
-                  placeholder="e.g. session_123 or user_account_id"
-                  className="h-8 text-xs"
-                  required
-                />
-              </Field>
-            </FieldGroup>
-          </form>
+            <div className="grid gap-2.5">
+              {AVAILABLE_INTEGRATIONS.map((integration) => {
+                const Icon = integration.icon;
+                const activeConn = connections.find(
+                  (c) =>
+                    c.externalAccountId === integration.accountId ||
+                    c.provider === integration.id ||
+                    c.externalAccountId.toLowerCase().includes(integration.id),
+                );
+                const isConnected = !!activeConn;
+                const isPending =
+                  (connectMutation.isPending &&
+                    connectMutation.variables?.externalAccountId ===
+                      integration.accountId) ||
+                  (deleteMutation.isPending &&
+                    deleteMutation.variables === activeConn?.id);
 
-          <div className="space-y-2 flex-1 overflow-hidden flex flex-col">
+                return (
+                  <Card key={integration.id} size="sm" className="bg-muted/30">
+                    <CardContent className="flex items-center justify-between p-3">
+                      <div className="flex items-start gap-3 min-w-0 pr-3">
+                        <div className="p-2 rounded-lg bg-background border border-border/80 shrink-0 text-foreground">
+                          <Icon className="size-5" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-xs text-foreground">
+                              {integration.name}
+                            </span>
+                            {isConnected && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 py-0 h-4"
+                              >
+                                Connected
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-snug">
+                            {integration.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {isConnected ? (
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          className="text-destructive hover:bg-destructive/10 shrink-0 text-xs gap-1"
+                          onClick={() => deleteMutation.mutate(activeConn.id)}
+                          disabled={isPending}
+                        >
+                          {isPending ? (
+                            <Spinner className="size-3" />
+                          ) : (
+                            <IconTrash className="size-3" />
+                          )}
+                          Disconnect
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="default"
+                          className="shrink-0 text-xs gap-1"
+                          onClick={() =>
+                            connectMutation.mutate({
+                              provider: integration.provider,
+                              externalAccountId: integration.accountId,
+                            })
+                          }
+                          disabled={isPending}
+                        >
+                          {isPending ? (
+                            <Spinner className="size-3" />
+                          ) : (
+                            <IconPlus className="size-3" />
+                          )}
+                          Connect
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2 flex-1 overflow-hidden flex flex-col pt-2">
             <span className="text-xs font-medium text-muted-foreground">
-              Active Connections ({connections.length})
+              Active Connected Accounts ({connections.length})
             </span>
             <ScrollArea className="flex-1 pr-2">
               {isLoading ? (
@@ -151,8 +230,8 @@ export function ConnectionsSheet({
                 </div>
               ) : connections.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
-                  No active connections found. Add one above to link external
-                  accounts.
+                  No active connections yet. Click Connect on Gmail or Notion
+                  above to activate tools for your agents.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -176,7 +255,7 @@ export function ConnectionsSheet({
                           </p>
                         </div>
                         <Button
-                          size="icon"
+                          size="icon-xs"
                           variant="ghost"
                           className="size-7 text-destructive hover:bg-destructive/10 shrink-0"
                           onClick={() => deleteMutation.mutate(c.id)}
@@ -194,20 +273,14 @@ export function ConnectionsSheet({
           </div>
         </div>
 
-        <SheetFooter className="border-t border-border/60 bg-background/80 p-3">
+        <SheetFooter className="border-t border-border/60 bg-background/80 p-3 flex sm:justify-end">
           <Button
-            type="submit"
-            form="add-connection-form"
             size="sm"
-            className="w-full h-8 text-xs gap-1.5"
-            disabled={createMutation.isPending || !externalAccountId.trim()}
+            variant="outline"
+            className="w-full text-xs"
+            onClick={() => onOpenChange(false)}
           >
-            {createMutation.isPending ? (
-              <Spinner className="size-3.5" />
-            ) : (
-              <IconPlus className="size-3.5" />
-            )}
-            Save Connection
+            Close
           </Button>
         </SheetFooter>
       </SheetContent>

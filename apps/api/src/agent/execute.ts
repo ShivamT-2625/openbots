@@ -228,13 +228,26 @@ export async function executeAgentRun(
         content: promptText,
       });
 
-      // If tied to a conversation, persist the incoming user message
+      // If tied to a conversation, check if already persisted (e.g. at route trigger time)
       if (runRecord.conversationId) {
-        await db.insert(messages).values({
-          conversationId: runRecord.conversationId,
-          role: "user",
-          content: { text: promptText },
-        });
+        const [existing] = await db
+          .select()
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, runRecord.conversationId),
+              eq(messages.role, "user"),
+            ),
+          )
+          .limit(1);
+
+        if (!existing) {
+          await db.insert(messages).values({
+            conversationId: runRecord.conversationId,
+            role: "user",
+            content: { text: promptText },
+          });
+        }
       }
     } else if (Array.isArray(inputObj?.messages)) {
       for (const m of inputObj.messages) {

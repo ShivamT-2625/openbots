@@ -1,4 +1,11 @@
-import { agentTools, agents, conversations, db, runs } from "@openbots/db";
+import {
+  agentTools,
+  agents,
+  conversations,
+  db,
+  messages,
+  runs,
+} from "@openbots/db";
 import { tasks } from "@trigger.dev/sdk";
 import { and, eq } from "drizzle-orm";
 import type {
@@ -211,6 +218,19 @@ export async function createAgentRun(
 
   if (!run) {
     return { error: "Failed to create run", status: 500 as const };
+  }
+
+  // Immediately persist user message into conversation so it is instantly available
+  if (conversationId && data.prompt) {
+    try {
+      await db.insert(messages).values({
+        conversationId,
+        role: "user",
+        content: { text: data.prompt },
+      });
+    } catch (err) {
+      console.warn("Could not immediately persist user message:", err);
+    }
   }
 
   // Enqueue durable task with Trigger.dev with idempotency deduplication

@@ -256,10 +256,16 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
       }>;
     },
     onSuccess: (data) => {
+      const targetConvId = data.run.conversationId || activeConversationId;
       if (data.run.conversationId && !activeConversationId) {
         setActiveConversationId(data.run.conversationId);
       }
       setActiveRunId(data.run.id);
+      if (targetConvId) {
+        queryClient.invalidateQueries({
+          queryKey: ["conversation", targetConvId],
+        });
+      }
       if (selectedAgentId) {
         queryClient.invalidateQueries({
           queryKey: ["runs", selectedAgentId],
