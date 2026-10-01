@@ -76,26 +76,48 @@ export async function initiateConnection(userId: string, appName: string) {
 
   const composio = new Composio({ apiKey });
 
-  // 1. Get toolkit metadata to find available auth configs
-  const toolkit = (await composio.toolkits.get(appName.toLowerCase())) as any;
-  const authConfigs: any[] = toolkit.authConfigDetails?.items ?? [];
-  const primaryConfig =
-    authConfigs.find((c: any) => c.status === "ENABLED") ?? authConfigs[0];
+  // 1. Find the auth config for the toolkit
+  let authConfigId: string | null = null;
 
-  let redirectUrl: string | null = null;
-  let connectionRequestId: string | null = null;
-
-  if (primaryConfig?.id) {
-    // Preferred: link using authConfigId directly
-    const linkResult = await composio.connectedAccounts.link(userId, primaryConfig.id);
-    redirectUrl = linkResult.redirectUrl ?? null;
-    connectionRequestId = linkResult.id ?? null;
-  } else {
-    // Fallback: authorize toolkit
-    const authResult = await composio.toolkits.authorize(userId, appName.toLowerCase());
-    redirectUrl = authResult.redirectUrl ?? null;
-    connectionRequestId = authResult.id ?? null;
+  try {
+    const listRes = await composio.authConfigs.list({
+      toolkit: appName.toLowerCase(),
+      showDisabled: false,
+    });
+    const configs = listRes.items || [];
+    const active =
+      configs.find((c) => c.status === "ENABLED") ?? configs[0];
+    if (active?.id) {
+      authConfigId = active.id;
+    }
+  } catch {
+    // If authConfigs.list fails, try toolkit metadata
   }
+
+  if (!authConfigId) {
+    try {
+      const toolkit = (await composio.toolkits.get(appName.toLowerCase())) as any;
+      const authConfigs: any[] = toolkit.authConfigDetails?.items ?? [];
+      const primaryConfig =
+        authConfigs.find((c: any) => c.status === "ENABLED") ?? authConfigs[0];
+      if (primaryConfig?.id) {
+        authConfigId = primaryConfig.id;
+      }
+    } catch {
+      // Continue to link call if not resolved
+    }
+  }
+
+  if (!authConfigId) {
+    throw new Error(
+      `No active authentication configuration found for ${appName}. Please ensure ${appName} integration is enabled in Composio.`,
+    );
+  }
+
+  // 2. Link using POST /api/v3/connected_accounts/link
+  const linkResult = await composio.connectedAccounts.link(userId, authConfigId);
+  const redirectUrl = linkResult.redirectUrl ?? null;
+  const connectionRequestId = linkResult.id ?? null;
 
   if (!redirectUrl) {
     throw new Error(

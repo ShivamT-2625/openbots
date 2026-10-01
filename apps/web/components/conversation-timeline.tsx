@@ -45,6 +45,7 @@ import {
 } from "@tabler/icons-react"
 import { ExecutionStepsCard, type StepItem } from "./execution-steps-card"
 import type { RunRecord } from "./run-history-sheet"
+import { Markdown } from "./markdown"
 
 export type MessageItem = {
   id: string
@@ -109,7 +110,7 @@ export function ConversationTimeline({
     activeRun?.status === "running"
 
   return (
-    <MessageScrollerProvider>
+    <MessageScrollerProvider defaultScrollPosition="end" autoScroll>
       <MessageScroller className="flex-1">
         <MessageScrollerViewport className="border-none! px-4 py-6 ring-2! outline-none!">
           <MessageScrollerContent className="mx-auto max-w-4xl space-y-6">
@@ -141,15 +142,21 @@ export function ConversationTimeline({
                 const text = getMessageText(msg.content)
 
                 return (
-                  <MessageScrollerItem key={msg.id} scrollAnchor={isUser}>
+                  <MessageScrollerItem key={msg.id}>
                     <Message align={isUser ? "end" : "start"} className="gap-2">
                       <MessageContent>
                         <Bubble
                           variant={isUser ? "default" : "secondary"}
                           align={isUser ? "end" : "start"}
                         >
-                          <BubbleContent className="typeset p-1.5 px-2.5 text-xs leading-relaxed whitespace-pre-wrap text-foreground sm:text-sm">
-                            {text}
+                          <BubbleContent
+                            className={
+                              isUser
+                                ? "p-1.5 px-2.5 text-xs whitespace-pre-wrap text-foreground sm:text-sm"
+                                : "typeset typeset-chat p-1.5 px-2.5 text-xs text-foreground sm:text-sm"
+                            }
+                          >
+                            {isUser ? text : <Markdown>{text}</Markdown>}
                           </BubbleContent>
                         </Bubble>
 

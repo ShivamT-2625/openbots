@@ -15,6 +15,10 @@
 }
 
 @layer components {
+  .typeset-chat {
+    --typeset-flow: 1em;
+    --typeset-leading: 1.6;
+  }
   .typeset {
     font-family: var(--typeset-font-body);
     font-size: calc(var(--typeset-size) * 1.125);
@@ -450,14 +454,14 @@
 
   /* First child adds no space above. Last so it wins ties. */
   .typeset
-  > :where(:first-child):not(
-    :where(
-      .not-typeset,
-      [data-not-typeset],
-      .not-typeset *,
-      [data-not-typeset] *
-    )
-  ),
+    > :where(:first-child):not(
+      :where(
+        .not-typeset,
+        [data-not-typeset],
+        .not-typeset *,
+        [data-not-typeset] *
+      )
+    ),
   .typeset
     > :where(:first-child)
     > :where(:first-child):not(
