@@ -25,6 +25,12 @@
       "skillPath": "skills/composio/SKILL.md",
       "computedHash": "60d7d3cf79e25c061030309af40eaa2a9de6df8f6b87977932996a9909232886"
     },
+    "shadcn": {
+      "source": "shadcn-ui/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "f615de216e085a84e31593ad0fa9062232adc40cd87b7c7ab2b8e49abf6500be"
+    },
     "trigger-setup": {
       "source": "triggerdotdev/skills",
       "sourceType": "github",
