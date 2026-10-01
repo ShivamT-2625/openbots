@@ -52,6 +52,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
     string | null
   >(null);
   const [activeRunId, setActiveRunId] = React.useState<string | null>(null);
+  const [isOptimisticRunning, setIsOptimisticRunning] = React.useState(false);
   const [optimisticMessages, setOptimisticMessages] = React.useState<
     MessageItem[]
   >([]);
@@ -122,6 +123,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
     if (selectedAgentId) {
       setActiveConversationId(null);
       setActiveRunId(null);
+      setIsOptimisticRunning(false);
       setOptimisticMessages([]);
     }
   }, [selectedAgentId]);
@@ -204,6 +206,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
       activeRunStatus === "failed" ||
       activeRunStatus === "cancelled"
     ) {
+      setIsOptimisticRunning(false);
       if (activeConversationId) {
         queryClient.invalidateQueries({
           queryKey: ["conversation", activeConversationId],
@@ -220,6 +223,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
   // 5. Submit Run Mutation with Optimistic UI updates
   const runMutation = useMutation({
     onMutate: async (prompt: string) => {
+      setIsOptimisticRunning(true);
       const tempId = `optimistic-${Date.now()}`;
       const optimisticMsg: MessageItem = {
         id: tempId,
@@ -276,6 +280,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
       }
     },
     onError: (_err, _prompt, context) => {
+      setIsOptimisticRunning(false);
       if (context?.tempId) {
         setOptimisticMessages((prev) =>
           prev.filter((m) => m.id !== context.tempId),
@@ -287,7 +292,10 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
   // 6. Cancel Run Mutation
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      if (!activeRunId) return;
+      if (!activeRunId) {
+        setIsOptimisticRunning(false);
+        return;
+      }
       const client = getClient();
       const res = await client.api.runs[":id"].cancel.$post({
         param: { id: activeRunId },
@@ -296,6 +304,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
       return res.json();
     },
     onSuccess: () => {
+      setIsOptimisticRunning(false);
       queryClient.invalidateQueries({ queryKey: ["run", activeRunId] });
       if (selectedAgentId) {
         queryClient.invalidateQueries({
@@ -303,10 +312,15 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
         });
       }
     },
+    onError: () => {
+      setIsOptimisticRunning(false);
+    },
   });
 
   const isActiveRun =
-    activeRunStatus === "queued" || activeRunStatus === "running";
+    isOptimisticRunning ||
+    activeRunStatus === "queued" ||
+    activeRunStatus === "running";
 
   return (
     <AuthGuard>
@@ -368,6 +382,7 @@ export function AgentWorkspace({ initialAgentId }: AgentWorkspaceProps) {
                     onCancelRun={() => cancelMutation.mutate()}
                     isCancelling={cancelMutation.isPending}
                     agentName={selectedAgent.name}
+                    isOptimisticRunning={isOptimisticRunning}
                   />
 
                   <InputComposer

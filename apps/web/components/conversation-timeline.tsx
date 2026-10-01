@@ -61,6 +61,7 @@ interface ConversationTimelineProps {
   onCancelRun?: () => void
   isCancelling?: boolean
   agentName: string
+  isOptimisticRunning?: boolean
 }
 
 function getMessageText(content: unknown): string {
@@ -99,9 +100,12 @@ export function ConversationTimeline({
   onCancelRun,
   isCancelling,
   agentName,
+  isOptimisticRunning,
 }: ConversationTimelineProps) {
   const isActiveRunOngoing =
-    activeRun?.status === "queued" || activeRun?.status === "running"
+    isOptimisticRunning ||
+    activeRun?.status === "queued" ||
+    activeRun?.status === "running"
 
   return (
     <MessageScrollerProvider autoScroll>
@@ -139,7 +143,7 @@ export function ConversationTimeline({
                           variant={isUser ? "default" : "secondary"}
                           align={isUser ? "end" : "start"}
                         >
-                          <BubbleContent className="typeset p-3 text-xs leading-relaxed whitespace-pre-wrap text-foreground sm:text-sm">
+                          <BubbleContent className="typeset p-1.5 px-2.5 text-xs leading-relaxed whitespace-pre-wrap text-foreground sm:text-sm">
                             {text}
                           </BubbleContent>
                         </Bubble>
@@ -175,22 +179,23 @@ export function ConversationTimeline({
             </MessageGroup>
 
             {/* Live Active In-Flight Run Stream */}
-            {activeRun && isActiveRunOngoing && (
+            {isActiveRunOngoing && (
               <MessageScrollerItem scrollAnchor>
                 <div className="space-y-3 py-1">
                   {/* Status Indicator using Marker */}
                   <Marker className="text-xs">
                     <MarkerIcon>
-                      {activeRun.status === "queued" && (
+                      {(!activeRun || activeRun.status === "queued") && (
                         <IconClock className="size-3.5 text-muted-foreground" />
                       )}
-                      {activeRun.status === "running" && (
+                      {activeRun?.status === "running" && (
                         <Spinner className="size-3.5 text-primary" />
                       )}
                     </MarkerIcon>
                     <MarkerContent>
-                      {activeRun.status === "queued" && "Queued for execution"}
-                      {activeRun.status === "running" && (
+                      {(!activeRun || activeRun.status === "queued") &&
+                        "Queued for execution"}
+                      {activeRun?.status === "running" && (
                         <span className="font-medium text-foreground">
                           {agentName} is thinking...
                         </span>
@@ -199,10 +204,12 @@ export function ConversationTimeline({
                   </Marker>
 
                   {/* Execution Tool Steps */}
-                  <ExecutionStepsCard
-                    steps={activeRunSteps}
-                    isLive={isActiveRunOngoing}
-                  />
+                  {activeRunSteps.length > 0 && (
+                    <ExecutionStepsCard
+                      steps={activeRunSteps}
+                      isLive={isActiveRunOngoing}
+                    />
+                  )}
                 </div>
               </MessageScrollerItem>
             )}

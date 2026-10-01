@@ -1,24 +1,24 @@
-"use client";
+"use client"
 
-import { Badge } from "@openbots/ui/components/badge";
-import { Blobatar } from "@openbots/ui/components/ui/blobatar";
-import { Button } from "@openbots/ui/components/button";
+import { Badge } from "@openbots/ui/components/badge"
+import { Blobatar } from "@openbots/ui/components/ui/blobatar"
+import { Button } from "@openbots/ui/components/button"
 
-import { SidebarTrigger } from "@openbots/ui/components/sidebar";
+import { SidebarTrigger } from "@openbots/ui/components/sidebar"
 import {
   IconCalendar,
   IconHistory,
   IconPlug,
   IconSettings,
-} from "@tabler/icons-react";
-import type { AgentData } from "./configure-agent-sheet";
+} from "@tabler/icons-react"
+import type { AgentData } from "./configure-agent-sheet"
 
 interface AgentHeaderProps {
-  selectedAgent: AgentData | null;
-  onOpenConfigure: () => void;
-  onOpenHistory: () => void;
-  onOpenConnections?: () => void;
-  onOpenSchedules?: () => void;
+  selectedAgent: AgentData | null
+  onOpenConfigure: () => void
+  onOpenHistory: () => void
+  onOpenConnections?: () => void
+  onOpenSchedules?: () => void
 }
 
 export function AgentHeader({
@@ -114,5 +114,5 @@ export function AgentHeader({
         )}
       </div>
     </header>
-  );
+  )
 }
