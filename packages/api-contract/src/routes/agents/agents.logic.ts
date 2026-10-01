@@ -69,9 +69,16 @@ export async function createAgentRun(
     return { error: "Failed to create run", status: 500 as const };
   }
 
-  // Enqueue durable task with Trigger.dev
+  // Enqueue durable task with Trigger.dev with idempotency deduplication
   try {
-    await tasks.trigger("agent-run", { runId: run.id });
+    await tasks.trigger(
+      "agent-run",
+      { runId: run.id },
+      {
+        idempotencyKey: run.id,
+        tags: [run.id, userId],
+      },
+    );
   } catch (err) {
     console.warn("Could not dispatch Trigger.dev task for run:", run.id, err);
   }

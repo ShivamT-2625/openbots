@@ -165,6 +165,28 @@ export const internalTools: Record<string, any> = {
   calculate: calculate,
 };
 
+/**
+ * OpenBots Tool Execution & Idempotency Semantics:
+ *
+ * 1. Internal Tools (get_current_time, calculate):
+ *    - Pure read and compute functions.
+ *    - Naturally idempotent and side-effect free.
+ *    - Safe for retries and re-evaluation.
+ *
+ * 2. External Tools (Composio, MCP):
+ *    - OpenBots runtime provides AT-MOST-ONCE execution guarantees for claimed runs:
+ *      an agent run is atomically claimed from 'queued' to 'running', preventing duplicate
+ *      workers from executing concurrently or re-executing terminal runs.
+ *    - However, once a tool execution step dispatches to an external SaaS provider via Composio
+ *      (e.g., Slack, Gmail, GitHub, Linear) or MCP, the external action produces real-world side effects.
+ *    - Most upstream SaaS APIs do NOT support universal idempotency keys or distributed transaction rollback.
+ *    - If a network partition or system crash occurs mid-run after a tool has executed, retrying
+ *      or repeating that tool call may result in duplicate side effects (e.g. duplicate emails or messages).
+ *    - When the underlying tool/provider supports idempotency keys (e.g., payment gateways or transactional
+ *      APIs accepting client idempotency tokens), callers should supply those idempotency parameters in the
+ *      tool input schema.
+ *    - OpenBots explicitly does NOT claim exactly-once side-effect execution for non-idempotent third-party APIs.
+ */
 export interface ResolvedTools {
   tools: Record<string, any>;
   cleanup: () => Promise<void>;

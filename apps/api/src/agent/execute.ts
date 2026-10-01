@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { agents, db, messages, runSteps, runs } from "@openbots/db";
 import { stepCountIs, ToolLoopAgent } from "ai";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { buildAgentTools } from "./tools.js";
 
 function getGoogleClient() {
@@ -26,28 +26,74 @@ function resolveModel(modelName: string) {
   return client(normalized);
 }
 
-function sanitizeErrorMessage(error: unknown): string {
+export function sanitizeErrorMessage(error: unknown): string {
   if (!error) return "Unknown error during execution";
   const rawMessage = error instanceof Error ? error.message : String(error);
-  // Redact potential API keys and secrets
+  // Redact potential API keys, connection strings, and secrets
   return rawMessage
+    .replace(/AIzaSy[a-zA-Z0-9_-]{20,}/g, "[REDACTED_GEMINI_KEY]")
+    .replace(/tr_(dev|prod)_[a-zA-Z0-9_-]{20,}/g, "[REDACTED_TRIGGER_KEY]")
     .replace(/sk-[a-zA-Z0-9_-]{20,}/g, "[REDACTED_API_KEY]")
     .replace(/Bearer\s+[a-zA-Z0-9_.-]+/gi, "Bearer [REDACTED_TOKEN]")
     .replace(
-      /(api[_-]?key|token|secret)\s*[:=]\s*['"][^'"]+['"]/gi,
+      /postgres(ql)?:\/\/[^:]+:([^@]+)@/gi,
+      "postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@",
+    )
+    .replace(
+      /(api[_-]?key|token|secret|password)\s*[:=]\s*['"][^'"]+['"]/gi,
       "$1=[REDACTED]",
     );
 }
 
-export async function executeAgentRun(runId: string) {
-  const [runRecord] = await db.select().from(runs).where(eq(runs.id, runId));
-  if (!runRecord) {
-    throw new Error(`Run not found: ${runId}`);
+export async function executeAgentRun(
+  runId: string,
+  options?: { signal?: AbortSignal },
+) {
+  // If already aborted before execution start, transition directly to cancelled
+  if (options?.signal?.aborted) {
+    const [cancelledRun] = await db
+      .update(runs)
+      .set({
+        status: "cancelled",
+        completedAt: new Date(),
+      })
+      .where(
+        and(eq(runs.id, runId), inArray(runs.status, ["queued", "running"])),
+      )
+      .returning();
+
+    if (cancelledRun) return cancelledRun;
+    const [existing] = await db.select().from(runs).where(eq(runs.id, runId));
+    return existing ?? { id: runId, status: "cancelled" };
   }
 
-  if (runRecord.status === "cancelled" || runRecord.status === "completed") {
-    return runRecord;
+  // 1. Concurrency-safe atomic claim from queued -> running
+  const [claimedRun] = await db
+    .update(runs)
+    .set({
+      status: "running",
+      startedAt: new Date(),
+    })
+    .where(and(eq(runs.id, runId), eq(runs.status, "queued")))
+    .returning();
+
+  if (!claimedRun) {
+    // Run was already claimed, cancelled, or finished by another worker/request
+    const [existingRun] = await db
+      .select()
+      .from(runs)
+      .where(eq(runs.id, runId));
+
+    if (!existingRun) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+
+    // Terminal states (completed, failed, cancelled) or active running state:
+    // Do NOT start another model/tool loop.
+    return existingRun;
   }
+
+  const runRecord = claimedRun;
 
   const [agentRecord] = await db
     .select()
@@ -63,7 +109,7 @@ export async function executeAgentRun(runId: string) {
         error: errorMsg,
         completedAt: new Date(),
       })
-      .where(eq(runs.id, runId));
+      .where(and(eq(runs.id, runId), eq(runs.status, "running")));
     throw new Error(errorMsg);
   }
 
@@ -77,7 +123,7 @@ export async function executeAgentRun(runId: string) {
         error: errorMsg,
         completedAt: new Date(),
       })
-      .where(eq(runs.id, runId));
+      .where(and(eq(runs.id, runId), eq(runs.status, "running")));
     throw new Error(errorMsg);
   }
 
@@ -91,22 +137,41 @@ export async function executeAgentRun(runId: string) {
         error: errorMsg,
         completedAt: new Date(),
       })
-      .where(eq(runs.id, runId));
+      .where(and(eq(runs.id, runId), eq(runs.status, "running")));
     throw new Error(errorMsg);
   }
 
-  // Mark run as running
-  await db
-    .update(runs)
-    .set({
-      status: "running",
-      startedAt: new Date(),
-    })
-    .where(eq(runs.id, runId));
+  // Set up cooperative AbortController
+  const abortController = new AbortController();
+  if (options?.signal) {
+    if (options.signal.aborted) {
+      abortController.abort(options.signal.reason);
+    } else {
+      options.signal.addEventListener(
+        "abort",
+        () => abortController.abort(options.signal?.reason),
+        { once: true },
+      );
+    }
+  }
 
   let resolvedTools: Awaited<ReturnType<typeof buildAgentTools>> | null = null;
 
   try {
+    // Check if cancellation occurred before tool setup
+    if (abortController.signal.aborted) {
+      const [cancelledRun] = await db
+        .update(runs)
+        .set({
+          status: "cancelled",
+          completedAt: new Date(),
+        })
+        .where(and(eq(runs.id, runId), eq(runs.status, "running")))
+        .returning();
+      const [current] = await db.select().from(runs).where(eq(runs.id, runId));
+      return cancelledRun ?? current ?? runRecord;
+    }
+
     resolvedTools = await buildAgentTools({
       userId: runRecord.userId,
       agentId: agentRecord.id,
@@ -190,56 +255,84 @@ export async function executeAgentRun(runId: string) {
 
     const result = await agent.generate({
       messages: inputMessages as any,
+      abortSignal: abortController.signal,
       onStepFinish: async (step) => {
-        // Record model step
-        await db.insert(runSteps).values({
-          runId: runRecord.id,
-          stepNumber: currentStepNumber++,
-          type: "model",
-          status: "completed",
-          model: agentRecord.model,
-          output: {
-            text: step.text,
-            finishReason: step.finishReason,
-            usage: step.usage,
-          },
-        });
+        // Cooperative DB cancellation check between steps
+        const [liveRun] = await db
+          .select({ status: runs.status })
+          .from(runs)
+          .where(eq(runs.id, runRecord.id));
 
-        // Record any tool execution steps
-        if (step.toolResults && step.toolResults.length > 0) {
-          for (const tr of step.toolResults) {
-            await db.insert(runSteps).values({
-              runId: runRecord.id,
-              stepNumber: currentStepNumber++,
-              type: "tool",
-              status: "completed",
-              toolName: tr.toolName,
-              toolCallId: tr.toolCallId,
-              toolInput: ((tr as any).input ?? (tr as any).args ?? null) as any,
-              toolOutput: ((tr as any).output ??
-                (tr as any).result ??
-                null) as any,
-            });
+        if (liveRun?.status === "cancelled") {
+          abortController.abort(new Error("Run was cancelled"));
+          return;
+        }
+
+        try {
+          // Record model step
+          await db.insert(runSteps).values({
+            runId: runRecord.id,
+            stepNumber: currentStepNumber++,
+            type: "model",
+            status: "completed",
+            model: agentRecord.model,
+            output: {
+              text: step.text,
+              finishReason: step.finishReason,
+              usage: step.usage,
+            },
+          });
+
+          // Record any tool execution steps
+          if (step.toolResults && step.toolResults.length > 0) {
+            for (const tr of step.toolResults) {
+              await db.insert(runSteps).values({
+                runId: runRecord.id,
+                stepNumber: currentStepNumber++,
+                type: "tool",
+                status: "completed",
+                toolName: tr.toolName,
+                toolCallId: tr.toolCallId,
+                toolInput: ((tr as any).input ??
+                  (tr as any).args ??
+                  null) as any,
+                toolOutput: ((tr as any).output ??
+                  (tr as any).result ??
+                  null) as any,
+              });
+            }
           }
+        } catch (stepErr) {
+          console.warn("Failed to persist run step metadata:", stepErr);
         }
       },
     });
 
-    // Update run to completed
     const finalOutput = {
       text: result.text,
       steps: result.steps?.length ?? 0,
       usage: result.usage,
     };
 
-    await db
+    // Conditional completion update: ONLY complete if run is still in 'running' state.
+    // If run was cancelled while model was finishing, this update affects 0 rows.
+    const [completedRun] = await db
       .update(runs)
       .set({
         status: "completed",
         output: finalOutput,
         completedAt: new Date(),
       })
-      .where(eq(runs.id, runId));
+      .where(and(eq(runs.id, runId), eq(runs.status, "running")))
+      .returning();
+
+    if (!completedRun) {
+      // Race: run was cancelled or modified concurrently
+      const [finalRun] = await db.select().from(runs).where(eq(runs.id, runId));
+      return (
+        finalRun ?? { id: runId, status: "cancelled", output: finalOutput }
+      );
+    }
 
     // If part of conversation, persist assistant's final response
     if (runRecord.conversationId && result.text) {
@@ -250,12 +343,27 @@ export async function executeAgentRun(runId: string) {
       });
     }
 
-    return {
-      runId,
-      status: "completed",
-      output: finalOutput,
-    };
+    return completedRun;
   } catch (error) {
+    // Check if run was cancelled in DB or aborted
+    const [currentRun] = await db.select().from(runs).where(eq(runs.id, runId));
+
+    if (currentRun?.status === "cancelled" || abortController.signal.aborted) {
+      // Ensure DB status is cancelled if not already marked
+      if (currentRun?.status !== "cancelled") {
+        await db
+          .update(runs)
+          .set({
+            status: "cancelled",
+            completedAt: new Date(),
+          })
+          .where(and(eq(runs.id, runId), eq(runs.status, "running")));
+      }
+      const [finalRun] = await db.select().from(runs).where(eq(runs.id, runId));
+      return finalRun ?? currentRun;
+    }
+
+    // Conditional failure update: only mark failed if still running
     const safeError = sanitizeErrorMessage(error);
     await db
       .update(runs)
@@ -264,7 +372,7 @@ export async function executeAgentRun(runId: string) {
         error: safeError,
         completedAt: new Date(),
       })
-      .where(eq(runs.id, runId));
+      .where(and(eq(runs.id, runId), eq(runs.status, "running")));
 
     throw new Error(safeError);
   } finally {

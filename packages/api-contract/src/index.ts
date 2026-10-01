@@ -17,4 +17,6 @@ const app = new Hono()
   .route("/connections", connectionsRoute);
 
 export type AppType = typeof app;
+export * from "./routes/agents/agents.logic.js";
+export * from "./routes/runs/runs.logic.js";
 export { app };
