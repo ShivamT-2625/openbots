@@ -72,7 +72,9 @@ export async function updateAgent(
     .update(agents)
     .set({
       ...(data.name ? { name: data.name } : {}),
-      ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.description !== undefined
+        ? { description: data.description }
+        : {}),
       ...(data.instructions ? { instructions: data.instructions } : {}),
       ...(data.model ? { model: data.model } : {}),
       ...(data.maxSteps ? { maxSteps: data.maxSteps } : {}),
@@ -86,6 +88,18 @@ export async function updateAgent(
     return null;
   }
   return { agent: updated };
+}
+
+export async function deleteAgent(id: string, userId: string) {
+  const [deleted] = await db
+    .delete(agents)
+    .where(and(eq(agents.id, id), eq(agents.userId, userId)))
+    .returning();
+
+  if (!deleted) {
+    return null;
+  }
+  return { agent: deleted };
 }
 
 export async function getAgentTools(agentId: string, userId: string) {
@@ -220,5 +234,84 @@ export async function createAgentRun(
       conversationId: run.conversationId,
     },
     status: 201 as const,
+  };
+}
+
+export async function listAvailableModels() {
+  const apiKey =
+    process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  if (apiKey) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      );
+      if (res.ok) {
+        const data = (await res.json()) as {
+          models?: Array<{
+            name: string;
+            displayName?: string;
+            description?: string;
+            supportedGenerationMethods?: string[];
+          }>;
+        };
+
+        if (data?.models && data.models.length > 0) {
+          const contentModels = data.models
+            .filter((m) =>
+              m.supportedGenerationMethods?.includes("generateContent"),
+            )
+            .map((m) => {
+              const cleanId = m.name.replace("models/", "");
+              return {
+                id: `google/${cleanId}`,
+                displayName: m.displayName || cleanId,
+                description: m.description,
+              };
+            });
+
+          if (contentModels.length > 0) {
+            return { models: contentModels };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch live Gemini models, using defaults:", err);
+    }
+  }
+
+  return {
+    models: [
+      {
+        id: "google/gemini-2.5-flash",
+        displayName: "Gemini 2.5 Flash",
+        description: "Fast multimodal reasoning and coding",
+      },
+      {
+        id: "google/gemini-2.5-pro",
+        displayName: "Gemini 2.5 Pro",
+        description: "Advanced reasoning for complex multi-step tasks",
+      },
+      {
+        id: "google/gemini-2.0-flash",
+        displayName: "Gemini 2.0 Flash",
+        description: "High speed multimodal model",
+      },
+      {
+        id: "google/gemini-2.0-flash-lite",
+        displayName: "Gemini 2.0 Flash-Lite",
+        description: "Cost-efficient, low latency tasks",
+      },
+      {
+        id: "google/gemini-1.5-flash",
+        displayName: "Gemini 1.5 Flash",
+        description: "1M token context lightweight model",
+      },
+      {
+        id: "google/gemini-1.5-pro",
+        displayName: "Gemini 1.5 Pro",
+        description: "High-capacity reasoning with 2M token context",
+      },
+    ],
   };
 }

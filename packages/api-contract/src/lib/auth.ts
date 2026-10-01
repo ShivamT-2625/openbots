@@ -7,4 +7,14 @@ export const auth = betterAuth({
     provider: "pg",
   }),
   basePath: "/api/auth",
+  emailAndPassword: {
+    enabled: true,
+  },
+  trustedOrigins: [
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000",
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ],
 });
+
+export type Auth = typeof auth;

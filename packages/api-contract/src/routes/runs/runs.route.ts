@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { auth } from "../../lib/auth.js";
+import { authMiddleware } from "../../middleware/auth.js";
 import { cancelRun, getRun, listRuns } from "./runs.logic.js";
 
 type Env = {
@@ -9,19 +9,8 @@ type Env = {
 };
 
 export const runsRoute = new Hono<Env>()
-  .use("*", async (c, next) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) {
-      const devUserId = c.req.header("x-user-id");
-      if (devUserId) {
-        c.set("user", { id: devUserId });
-        return await next();
-      }
-      return c.json({ error: "Unauthorized" }, 401);
-    }
-    c.set("user", session.user);
-    await next();
-  })
+  .use("*", authMiddleware)
+
   .get("/", async (c) => {
     const user = c.get("user");
     const agentId = c.req.query("agentId");

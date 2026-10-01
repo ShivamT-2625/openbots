@@ -7,6 +7,11 @@ import {
   AccordionTrigger,
 } from "@openbots/ui/components/accordion";
 import { Badge } from "@openbots/ui/components/badge";
+import {
+  Marker,
+  MarkerContent,
+  MarkerIcon,
+} from "@openbots/ui/components/marker";
 import { Spinner } from "@openbots/ui/components/spinner";
 import { IconCheck, IconTool, IconX } from "@tabler/icons-react";
 
@@ -47,14 +52,6 @@ export function ExecutionStepsCard({ steps, isLive }: ExecutionStepsCardProps) {
   const toolSteps = steps.filter((s) => s.type === "tool" || s.toolName);
 
   if (toolSteps.length === 0) {
-    if (isLive) {
-      return (
-        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          <Spinner className="size-3.5" />
-          <span>Agent is reasoning and preparing tools...</span>
-        </div>
-      );
-    }
     return null;
   }
 

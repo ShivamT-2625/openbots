@@ -15,6 +15,13 @@
       "when": 1790845148134,
       "tag": "0001_luxuriant_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790873612727,
+      "tag": "0002_mixed_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

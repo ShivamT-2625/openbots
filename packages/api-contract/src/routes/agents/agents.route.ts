@@ -1,12 +1,14 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { auth } from "../../lib/auth.js";
+import { authMiddleware } from "../../middleware/auth.js";
 import {
   createAgent,
   createAgentRun,
+  deleteAgent,
   getAgent,
   getAgentTools,
   listAgents,
+  listAvailableModels,
   toggleAgentTool,
   updateAgent,
 } from "./agents.logic.js";
@@ -24,24 +26,18 @@ type Env = {
 };
 
 export const agentsRoute = new Hono<Env>()
-  .use("*", async (c, next) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) {
-      const devUserId = c.req.header("x-user-id");
-      if (devUserId) {
-        c.set("user", { id: devUserId });
-        return await next();
-      }
-      return c.json({ error: "Unauthorized" }, 401);
-    }
-    c.set("user", session.user);
-    await next();
+  .use("*", authMiddleware)
+
+  .get("/models", async (c) => {
+    const result = await listAvailableModels();
+    return c.json(result);
   })
   .get("/", async (c) => {
     const user = c.get("user");
     const result = await listAgents(user.id);
     return c.json(result);
   })
+
   .get("/:id", async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
@@ -95,4 +91,13 @@ export const agentsRoute = new Hono<Env>()
       return c.json({ error: result.error }, result.status);
     }
     return c.json({ run: result.run }, 201);
+  })
+  .delete("/:id", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const result = await deleteAgent(id, user.id);
+    if (!result) {
+      return c.json({ error: "Agent not found" }, 404);
+    }
+    return c.json({ success: true, agent: result.agent });
   });

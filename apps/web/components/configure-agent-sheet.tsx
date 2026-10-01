@@ -14,9 +14,11 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@openbots/ui/components/sheet";
+
 import { Spinner } from "@openbots/ui/components/spinner";
 import { Switch } from "@openbots/ui/components/switch";
 import {
@@ -86,6 +88,26 @@ export function ConfigureAgentSheet({
     }
   }, [agent]);
 
+  // Query available live models
+  const { data: modelsData } = useQuery({
+    queryKey: ["available-models"],
+    queryFn: async () => {
+      const client = getClient();
+      const res = await client.api.agents.models.$get();
+      if (!res.ok) return { models: [] };
+      return res.json() as Promise<{
+        models: Array<{
+          id: string;
+          displayName: string;
+          description?: string;
+        }>;
+      }>;
+    },
+    enabled: open,
+  });
+
+  const availableModels = modelsData?.models || [];
+
   // Query agent tools
   const { data: toolsData, isLoading: isLoadingTools } = useQuery({
     queryKey: ["agent-tools", agent?.id],
@@ -132,6 +154,28 @@ export function ConfigureAgentSheet({
       queryClient.invalidateQueries({ queryKey: ["agents"] });
       queryClient.invalidateQueries({ queryKey: ["agent", agent?.id] });
       setTimeout(() => setSaveSuccess(false), 2500);
+    },
+    onError: (err: Error) => {
+      setSaveError(err.message);
+    },
+  });
+
+  const deleteAgentMutation = useMutation({
+    mutationFn: async () => {
+      if (!agent?.id) return;
+      const client = getClient();
+      const res = await client.api.agents[":id"].$delete({
+        param: { id: agent.id },
+      });
+      if (!res.ok) throw new Error("Failed to delete agent");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      onOpenChange(false);
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     },
     onError: (err: Error) => {
       setSaveError(err.message);
@@ -188,7 +232,7 @@ export function ConfigureAgentSheet({
 
         <Tabs
           defaultValue="general"
-          className="flex flex-1 flex-col overflow-hidden"
+          className="flex flex-1 flex-col overflow-hidden px-3"
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="general">Configuration</TabsTrigger>
@@ -198,8 +242,9 @@ export function ConfigureAgentSheet({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="flex-1 overflow-y-auto pt-3">
+          <TabsContent value="general" className="flex-1 overflow-y-auto px-2">
             <form
+              id="configure-agent-form"
               onSubmit={(e) => {
                 e.preventDefault();
                 updateAgentMutation.mutate();
@@ -261,14 +306,27 @@ export function ConfigureAgentSheet({
                       id="cfg-model"
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full"
+                      className="w-full text-xs"
                     >
-                      <NativeSelectOption value="google/gemini-2.5-flash">
-                        Gemini 2.5 Flash
-                      </NativeSelectOption>
-                      <NativeSelectOption value="google/gemini-2.5-pro">
-                        Gemini 2.5 Pro
-                      </NativeSelectOption>
+                      {availableModels.length > 0 ? (
+                        availableModels.map((m) => (
+                          <NativeSelectOption key={m.id} value={m.id}>
+                            {m.displayName}
+                          </NativeSelectOption>
+                        ))
+                      ) : (
+                        <>
+                          <NativeSelectOption value="google/gemini-2.5-flash">
+                            Gemini 2.5 Flash
+                          </NativeSelectOption>
+                          <NativeSelectOption value="google/gemini-2.5-pro">
+                            Gemini 2.5 Pro
+                          </NativeSelectOption>
+                          <NativeSelectOption value="google/gemini-2.0-flash">
+                            Gemini 2.0 Flash
+                          </NativeSelectOption>
+                        </>
+                      )}
                     </NativeSelect>
                   </Field>
 
@@ -285,19 +343,6 @@ export function ConfigureAgentSheet({
                   </Field>
                 </div>
               </FieldGroup>
-
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={updateAgentMutation.isPending}
-                >
-                  {updateAgentMutation.isPending && (
-                    <Spinner data-icon="inline-start" />
-                  )}
-                  Save Changes
-                </Button>
-              </div>
             </form>
           </TabsContent>
 
@@ -357,6 +402,42 @@ export function ConfigureAgentSheet({
             </ScrollArea>
           </TabsContent>
         </Tabs>
+
+        <SheetFooter className="border-t border-border/60 bg-background/80 p-3 flex flex-col gap-2">
+          <Button
+            type="submit"
+            form="configure-agent-form"
+            className="w-full h-8 text-xs"
+            disabled={updateAgentMutation.isPending}
+          >
+            {updateAgentMutation.isPending && (
+              <Spinner data-icon="inline-start" />
+            )}
+            Save Changes
+          </Button>
+
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full h-8 text-xs"
+            disabled={deleteAgentMutation.isPending}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Are you sure you want to delete "${agent.name}"? This cannot be undone.`,
+                )
+              ) {
+                deleteAgentMutation.mutate();
+              }
+            }}
+          >
+            {deleteAgentMutation.isPending ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              "Delete Agent"
+            )}
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

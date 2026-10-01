@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@blobatar/react": "^2.7.0",
     "@shadcn/react": "^0.3.1",
     "@tabler/icons-react": "^3.48.0",
+    "blobatar": "^2.7.0",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.4.0",
@@ -42,6 +44,7 @@
     "./globals.css": "./src/styles/globals.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
+    "./components/ui/*": "./src/components/ui/*.tsx",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
   }

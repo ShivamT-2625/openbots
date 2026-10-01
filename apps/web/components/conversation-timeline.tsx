@@ -8,13 +8,22 @@ import {
 import { Badge } from "@openbots/ui/components/badge";
 import { Bubble, BubbleContent } from "@openbots/ui/components/bubble";
 import { Button } from "@openbots/ui/components/button";
+import { Blobatar } from "@openbots/ui/components/ui/blobatar";
+import {
+  Marker,
+  MarkerContent,
+  MarkerIcon,
+} from "@openbots/ui/components/marker";
+
 import {
   Message,
   MessageAvatar,
   MessageContent,
+  MessageFooter,
   MessageGroup,
   MessageHeader,
 } from "@openbots/ui/components/message";
+
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -23,6 +32,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@openbots/ui/components/message-scroller";
+
 import { Spinner } from "@openbots/ui/components/spinner";
 import {
   IconAlertCircle,
@@ -68,7 +78,15 @@ function getMessageText(content: unknown): string {
 function formatMsgTime(dateVal: string | Date): string {
   try {
     const d = new Date(dateVal);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const dateStr = d.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+    });
+    const timeStr = d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${dateStr}, ${timeStr}`;
   } catch {
     return "";
   }
@@ -115,23 +133,8 @@ export function ConversationTimeline({
 
                 return (
                   <MessageScrollerItem key={msg.id} scrollAnchor={isUser}>
-                    <Message align={isUser ? "end" : "start"} className="gap-3">
-                      {!isUser && (
-                        <MessageAvatar className="size-7 bg-primary text-primary-foreground">
-                          <IconRobot className="size-4" />
-                        </MessageAvatar>
-                      )}
-
+                    <Message align={isUser ? "end" : "start"} className="gap-2">
                       <MessageContent>
-                        <MessageHeader className="gap-2">
-                          <span className="font-semibold text-foreground">
-                            {isUser ? "You" : agentName}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatMsgTime(msg.createdAt)}
-                          </span>
-                        </MessageHeader>
-
                         <Bubble
                           variant={isUser ? "secondary" : "outline"}
                           align={isUser ? "end" : "start"}
@@ -140,89 +143,77 @@ export function ConversationTimeline({
                             {text}
                           </BubbleContent>
                         </Bubble>
-                      </MessageContent>
 
-                      {isUser && (
-                        <MessageAvatar className="size-7 bg-muted text-muted-foreground">
-                          <IconUser className="size-4" />
-                        </MessageAvatar>
-                      )}
+                        {isUser ? (
+                          <MessageFooter className="gap-2 px-1 pt-0.5 justify-end">
+                            <span className="font-medium text-xs text-foreground">
+                              You
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatMsgTime(msg.createdAt)}
+                            </span>
+                          </MessageFooter>
+                        ) : (
+                          <MessageFooter className="gap-2 px-1 pt-0.5">
+                            <Blobatar
+                              name={agentName}
+                              className="size-4.5 shrink-0"
+                            />
+                            <span className="font-medium text-xs text-foreground">
+                              {agentName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatMsgTime(msg.createdAt)}
+                            </span>
+                          </MessageFooter>
+                        )}
+                      </MessageContent>
                     </Message>
                   </MessageScrollerItem>
                 );
               })}
             </MessageGroup>
 
-            {/* Live Active Run Stream */}
-            {activeRun && (
+            {/* Live Active In-Flight Run Stream */}
+            {activeRun && isActiveRunOngoing && (
               <MessageScrollerItem scrollAnchor>
-                <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-3">
+                <div className="space-y-3 py-1">
+                  {/* Status Indicator using Marker */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-xs text-foreground">
-                        Run State:
-                      </span>
-                      {activeRun.status === "queued" && (
-                        <Badge
-                          variant="outline"
-                          className="gap-1 font-mono text-[10px]"
-                        >
-                          <IconClock className="size-3" />
-                          queued
-                        </Badge>
-                      )}
-                      {activeRun.status === "running" && (
-                        <Badge
-                          variant="outline"
-                          className="gap-1 font-mono text-[10px] border-primary/40 bg-primary/5 text-primary"
-                        >
-                          <Spinner className="size-2.5" />
-                          running
-                        </Badge>
-                      )}
-                      {activeRun.status === "completed" && (
-                        <Badge
-                          variant="secondary"
-                          className="gap-1 font-mono text-[10px] text-emerald-600 dark:text-emerald-400"
-                        >
-                          <IconCheck className="size-3" />
-                          completed
-                        </Badge>
-                      )}
-                      {activeRun.status === "cancelled" && (
-                        <Badge
-                          variant="outline"
-                          className="gap-1 font-mono text-[10px] text-muted-foreground"
-                        >
-                          <IconX className="size-3" />
-                          cancelled
-                        </Badge>
-                      )}
-                      {activeRun.status === "failed" && (
-                        <Badge
-                          variant="destructive"
-                          className="gap-1 font-mono text-[10px]"
-                        >
-                          <IconAlertCircle className="size-3" />
-                          failed
-                        </Badge>
-                      )}
-                    </div>
+                    <Marker className="text-xs">
+                      <MarkerIcon>
+                        {activeRun.status === "queued" && (
+                          <IconClock className="size-3.5 text-muted-foreground" />
+                        )}
+                        {activeRun.status === "running" && (
+                          <Spinner className="size-3.5 text-primary" />
+                        )}
+                      </MarkerIcon>
+                      <MarkerContent>
+                        {activeRun.status === "queued" &&
+                          "Queued for execution"}
+                        {activeRun.status === "running" && (
+                          <span className="text-foreground font-medium">
+                            {agentName} is thinking...
+                          </span>
+                        )}
+                      </MarkerContent>
+                    </Marker>
 
-                    {isActiveRunOngoing && onCancelRun && (
+                    {onCancelRun && (
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
                         onClick={onCancelRun}
                         disabled={isCancelling}
-                        className="h-6 gap-1 px-2 text-[11px]"
+                        className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-destructive"
                       >
                         {isCancelling ? (
                           <Spinner className="size-2.5" />
                         ) : (
                           <IconPlayerStop className="size-3" />
                         )}
-                        Cancel Run
+                        <span>Stop</span>
                       </Button>
                     )}
                   </div>
@@ -232,55 +223,41 @@ export function ConversationTimeline({
                     steps={activeRunSteps}
                     isLive={isActiveRunOngoing}
                   />
-
-                  {/* Error or Cancellation Notification */}
-                  {Boolean(
-                    activeRun.status === "failed" && activeRun.error,
-                  ) && (
-                    <Alert variant="destructive">
-                      <IconAlertCircle className="size-4" />
-                      <AlertTitle>Execution Failed</AlertTitle>
-                      <AlertDescription className="font-mono text-xs">
-                        {activeRun.error}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {activeRun.status === "cancelled" && (
-                    <Alert>
-                      <IconPlayerStop className="size-4" />
-                      <AlertTitle>Run Cancelled</AlertTitle>
-                      <AlertDescription className="text-xs">
-                        The active run was safely halted and terminal state
-                        persisted.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* Live final response if completed before message refetch */}
-                  {Boolean(
-                    activeRun.status === "completed" && activeRun.output,
-                  ) && (
-                    <div className="rounded-lg border border-border bg-card p-3">
-                      <div className="mb-1 text-[11px] font-semibold text-muted-foreground">
-                        {agentName} Final Response
-                      </div>
-                      <div className="text-xs leading-relaxed text-foreground whitespace-pre-wrap sm:text-sm">
-                        {typeof activeRun.output === "string"
-                          ? activeRun.output
-                          : typeof (activeRun.output as Record<string, unknown>)
-                                ?.text === "string"
-                            ? String(
-                                (activeRun.output as Record<string, unknown>)
-                                  .text,
-                              )
-                            : JSON.stringify(activeRun.output, null, 2)}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </MessageScrollerItem>
             )}
+
+            {/* Error or Cancelled Notice if run failed or was cancelled */}
+            {activeRun &&
+              !isActiveRunOngoing &&
+              (activeRun.status === "failed" ||
+                activeRun.status === "cancelled") && (
+                <MessageScrollerItem scrollAnchor>
+                  <div className="py-1">
+                    {activeRun.status === "failed" && activeRun.error && (
+                      <Marker className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
+                        <MarkerIcon>
+                          <IconAlertCircle className="size-4 shrink-0 text-destructive" />
+                        </MarkerIcon>
+                        <MarkerContent className="font-mono text-[11px] leading-relaxed">
+                          {activeRun.error}
+                        </MarkerContent>
+                      </Marker>
+                    )}
+
+                    {activeRun.status === "cancelled" && (
+                      <Marker className="text-xs text-muted-foreground">
+                        <MarkerIcon>
+                          <IconPlayerStop className="size-3.5" />
+                        </MarkerIcon>
+                        <MarkerContent>
+                          The run was halted safely.
+                        </MarkerContent>
+                      </Marker>
+                    )}
+                  </div>
+                </MessageScrollerItem>
+              )}
           </MessageScrollerContent>
         </MessageScrollerViewport>
         <MessageScrollerButton />

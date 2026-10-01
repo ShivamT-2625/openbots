@@ -13,9 +13,11 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@openbots/ui/components/sheet";
+
 import { Spinner } from "@openbots/ui/components/spinner";
 import {
   IconAlertCircle,
@@ -249,21 +251,10 @@ export function RunHistorySheet({
                           ` • Finished: ${formatTimestamp(run.completedAt)}`}
                       </div>
                     </div>
-                    {isInspectedActive && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => cancelMutation.mutate(run.id)}
-                        disabled={cancelMutation.isPending}
-                      >
-                        <IconPlayerStop className="size-3.5" />
-                        Cancel Run
-                      </Button>
-                    )}
                   </div>
 
                   {/* Input Task Card */}
+
                   <Card size="sm">
                     <CardHeader className="py-2.5">
                       <CardTitle className="text-xs">User Task</CardTitle>
@@ -375,6 +366,25 @@ export function RunHistorySheet({
             </ScrollArea>
           )}
         </div>
+
+        {inspectedRunId && isInspectedActive && run && (
+          <SheetFooter className="border-t border-border/60 bg-background/80 p-3">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="w-full h-8 text-xs gap-1.5"
+              onClick={() => cancelMutation.mutate(run.id)}
+              disabled={cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? (
+                <Spinner className="size-3.5" />
+              ) : (
+                <IconPlayerStop className="size-3.5" />
+              )}
+              Cancel Run
+            </Button>
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
   );

@@ -17,7 +17,7 @@ import {
 } from "@openbots/ui/components/native-select";
 import { Spinner } from "@openbots/ui/components/spinner";
 import { Textarea } from "@openbots/ui/components/textarea";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { getClient } from "@/lib/api";
 
@@ -33,6 +33,25 @@ export function CreateAgentDialog({
   onAgentCreated,
 }: CreateAgentDialogProps) {
   const queryClient = useQueryClient();
+
+  const { data: modelsData } = useQuery({
+    queryKey: ["available-models"],
+    queryFn: async () => {
+      const client = getClient();
+      const res = await client.api.agents.models.$get();
+      if (!res.ok) return { models: [] };
+      return res.json() as Promise<{
+        models: Array<{
+          id: string;
+          displayName: string;
+          description?: string;
+        }>;
+      }>;
+    },
+    enabled: open,
+  });
+
+  const availableModels = modelsData?.models || [];
 
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -154,14 +173,27 @@ export function CreateAgentDialog({
                   id="model"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  className="w-full"
+                  className="w-full text-xs"
                 >
-                  <NativeSelectOption value="google/gemini-2.5-flash">
-                    Gemini 2.5 Flash
-                  </NativeSelectOption>
-                  <NativeSelectOption value="google/gemini-2.5-pro">
-                    Gemini 2.5 Pro
-                  </NativeSelectOption>
+                  {availableModels.length > 0 ? (
+                    availableModels.map((m) => (
+                      <NativeSelectOption key={m.id} value={m.id}>
+                        {m.displayName}
+                      </NativeSelectOption>
+                    ))
+                  ) : (
+                    <>
+                      <NativeSelectOption value="google/gemini-2.5-flash">
+                        Gemini 2.5 Flash
+                      </NativeSelectOption>
+                      <NativeSelectOption value="google/gemini-2.5-pro">
+                        Gemini 2.5 Pro
+                      </NativeSelectOption>
+                      <NativeSelectOption value="google/gemini-2.0-flash">
+                        Gemini 2.0 Flash
+                      </NativeSelectOption>
+                    </>
+                  )}
                 </NativeSelect>
               </Field>
 
