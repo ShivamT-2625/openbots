@@ -1,6 +1,8 @@
 {
   "extends": "@openbots/typescript-config/library.json",
   "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
     "paths": {
       "@/*": ["./src/*"]
     }

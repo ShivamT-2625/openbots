@@ -3,14 +3,14 @@ import postgres from "postgres";
 import * as schema from "./schemas/index.js";
 
 function getDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error("DATABASE_URL environment variable is required");
-  }
-  return url;
+  return (
+    process.env.DATABASE_URL ??
+    "postgresql://postgres:postgres@localhost:5432/openbots"
+  );
 }
 
-const client = postgres(getDatabaseUrl());
+// prepare: false is required for Supabase transaction pooler (port 6543)
+const client = postgres(getDatabaseUrl(), { prepare: false });
 
 export const db = drizzle(client, { schema });
 export type Database = typeof db;

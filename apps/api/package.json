@@ -8,16 +8,25 @@
     "start": "bun run src/index.ts",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test-agent-runtime.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.0",
+    "@composio/core": "^0.22.0",
+    "@composio/vercel": "^0.12.0",
+    "@modelcontextprotocol/client": "^2.2.0",
     "@openbots/api-contract": "workspace:*",
-    "@trigger.dev/sdk": "^4.6.0",
-    "hono": "^4.7.11"
+    "@openbots/db": "workspace:*",
+    "@trigger.dev/sdk": "4.6.4",
+    "ai": "^7.0.0",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.7.11",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@openbots/typescript-config": "workspace:*",
-    "@trigger.dev/build": "^4.6.0",
+    "@trigger.dev/build": "4.6.4",
     "@types/node": "^20",
     "typescript": "^5"
   }

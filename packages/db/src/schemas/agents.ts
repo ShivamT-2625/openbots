@@ -35,7 +35,7 @@ export const agents = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     instructions: text("instructions").notNull(),
-    model: text("model").notNull().default("openai/gpt-4o"),
+    model: text("model").notNull().default("google/gemini-2.5-flash"),
     status: agentStatusEnum("status").notNull().default("active"),
     autonomy: agentAutonomyEnum("autonomy").notNull().default("manual"),
     maxSteps: integer("max_steps").notNull().default(10),

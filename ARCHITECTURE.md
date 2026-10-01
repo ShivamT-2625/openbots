@@ -143,13 +143,15 @@ Intended for caching, rate limiting, distributed locks, and short-lived executio
 - **Connection:** `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
 - **Access:** `import { getRedis } from "@openbots/db/redis"`
 
-### AI — Vercel AI SDK
+### AI — Vercel AI SDK (Gemini)
 
-LLM provider abstraction via the `ai` package with `@ai-sdk/openai` provider. Installed in `packages/api-contract`.
+LLM runtime via the `ai` package with `@ai-sdk/google` provider running in `apps/api/src/agent/`.
 
-The AI SDK provides `generateText`, `streamText`, tool calling, and structured output across model providers through a unified API. Domain code uses the AI SDK directly — no custom wrapper.
+The AI SDK provides `ToolLoopAgent` for autonomous multi-step tool-calling execution loops with configurable `stepCountIs(maxSteps)` stopping conditions.
 
-- **Connection:** `OPENAI_API_KEY` (read by `@ai-sdk/openai`)
+- **Provider:** `@ai-sdk/google` (Google Generative AI / Gemini)
+- **Default Model:** `google/gemini-2.5-flash`
+- **Connection:** `GEMINI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY`
 
 ### Authentication — Better Auth
 
@@ -190,7 +192,7 @@ Handles long-running agent runs, scheduled tasks, retries, and human-in-the-loop
 | `DATABASE_URL` | Server only (`packages/db`) | PostgreSQL connection string |
 | `UPSTASH_REDIS_REST_URL` | Server only (`packages/db`) | Upstash Redis endpoint |
 | `UPSTASH_REDIS_REST_TOKEN` | Server only (`packages/db`) | Upstash Redis auth token |
-| `OPENAI_API_KEY` | Server only (`api-contract`) | OpenAI API key for AI SDK |
+| `GEMINI_API_KEY` | Server only (`apps/api`) | Google Generative AI / Gemini API key |
 | `COMPOSIO_API_KEY` | Server only (`api-contract`) | Composio API key |
 | `BETTER_AUTH_SECRET` | Server only (`api-contract`) | Auth encryption secret |
 | `BETTER_AUTH_URL` | Server only (`api-contract`) | Auth base URL |

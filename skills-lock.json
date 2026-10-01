@@ -20,10 +20,10 @@
       "computedHash": "547c94e012fdcb9b23994e46ca788c27ab42620f8c92d041ca86d1ae62f717b1"
     },
     "composio": {
-      "source": "composio-community/skills",
+      "source": "ComposioHQ/composio",
       "sourceType": "github",
       "skillPath": "skills/composio/SKILL.md",
-      "computedHash": "11b975f122ecbf455b437e4e42ebf8f30fad84220894c3d52549eefea92a7795"
+      "computedHash": "60d7d3cf79e25c061030309af40eaa2a9de6df8f6b87977932996a9909232886"
     },
     "trigger-setup": {
       "source": "triggerdotdev/skills",
