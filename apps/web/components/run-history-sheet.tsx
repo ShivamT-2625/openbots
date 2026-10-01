@@ -272,8 +272,8 @@ export function RunHistorySheet({
                       <p className="text-xs text-foreground whitespace-pre-wrap">
                         {typeof run.input === "string"
                           ? run.input
-                          : typeof (run.input as Record<string, unknown>)?.prompt ===
-                              "string"
+                          : typeof (run.input as Record<string, unknown>)
+                                ?.prompt === "string"
                             ? String(
                                 (run.input as Record<string, unknown>).prompt,
                               )
@@ -344,11 +344,9 @@ export function RunHistorySheet({
                     const promptText =
                       typeof r.input === "string"
                         ? r.input
-                        : typeof (r.input as Record<string, unknown>)?.prompt ===
-                            "string"
-                          ? String(
-                              (r.input as Record<string, unknown>).prompt,
-                            )
+                        : typeof (r.input as Record<string, unknown>)
+                              ?.prompt === "string"
+                          ? String((r.input as Record<string, unknown>).prompt)
                           : "Manual Run";
 
                     return (

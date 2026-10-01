@@ -263,9 +263,11 @@ export function ConversationTimeline({
                 <div className="text-xs leading-relaxed text-foreground whitespace-pre-wrap sm:text-sm">
                   {typeof activeRun.output === "string"
                     ? activeRun.output
-                    : typeof (activeRun.output as Record<string, unknown>)?.text ===
-                        "string"
-                      ? String((activeRun.output as Record<string, unknown>).text)
+                    : typeof (activeRun.output as Record<string, unknown>)
+                          ?.text === "string"
+                      ? String(
+                          (activeRun.output as Record<string, unknown>).text,
+                        )
                       : JSON.stringify(activeRun.output, null, 2)}
                 </div>
               </div>

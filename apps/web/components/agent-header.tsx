@@ -13,7 +13,6 @@ import {
   IconRobot,
   IconSettings,
 } from "@tabler/icons-react";
-import * as React from "react";
 import type { AgentData } from "./configure-agent-sheet";
 
 interface AgentHeaderProps {
