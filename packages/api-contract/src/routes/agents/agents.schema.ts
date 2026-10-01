@@ -11,6 +11,17 @@ export const createAgentSchema = z.object({
 
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 
+export const updateAgentSchema = createAgentSchema.partial();
+export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
+
+export const configureToolSchema = z.object({
+  toolName: z.string().min(1),
+  provider: z.enum(["internal", "composio", "mcp"]),
+  enabled: z.boolean(),
+  config: z.any().optional(),
+});
+export type ConfigureToolInput = z.infer<typeof configureToolSchema>;
+
 export const createAgentRunSchema = z.object({
   prompt: z.string().optional(),
   input: z.any().optional(),
@@ -18,3 +29,4 @@ export const createAgentRunSchema = z.object({
 });
 
 export type CreateAgentRunInput = z.infer<typeof createAgentRunSchema>;
+

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { auth } from "../../lib/auth.js";
-import { cancelRun, getRun, listRuns } from "./runs.logic.js";
+import { getConversation, listConversations } from "./conversations.logic.js";
 
 type Env = {
   Variables: {
@@ -8,7 +8,7 @@ type Env = {
   };
 };
 
-export const runsRoute = new Hono<Env>()
+export const conversationsRoute = new Hono<Env>()
   .use("*", async (c, next) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session?.user) {
@@ -25,24 +25,15 @@ export const runsRoute = new Hono<Env>()
   .get("/", async (c) => {
     const user = c.get("user");
     const agentId = c.req.query("agentId");
-    const result = await listRuns(user.id, agentId);
+    const result = await listConversations(user.id, agentId);
     return c.json(result);
   })
   .get("/:id", async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
-    const result = await getRun(id, user.id);
+    const result = await getConversation(id, user.id);
     if (!result) {
-      return c.json({ error: "Run not found" }, 404);
+      return c.json({ error: "Conversation not found" }, 404);
     }
     return c.json(result);
-  })
-  .post("/:id/cancel", async (c) => {
-    const user = c.get("user");
-    const id = c.req.param("id");
-    const result = await cancelRun(id, user.id);
-    if ("error" in result) {
-      return c.json({ error: result.error }, result.status);
-    }
-    return c.json({ run: result.run });
   });

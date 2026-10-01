@@ -1,9 +1,17 @@
 import { db, runSteps, runs } from "@openbots/db";
 import { runs as triggerRuns } from "@trigger.dev/sdk";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
-export async function listRuns(userId: string) {
-  const userRuns = await db.select().from(runs).where(eq(runs.userId, userId));
+export async function listRuns(userId: string, agentId?: string) {
+  const userRuns = await db
+    .select()
+    .from(runs)
+    .where(
+      agentId
+        ? and(eq(runs.userId, userId), eq(runs.agentId, agentId))
+        : eq(runs.userId, userId),
+    )
+    .orderBy(desc(runs.createdAt));
   return { runs: userRuns };
 }
 

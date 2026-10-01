@@ -4,19 +4,21 @@ import { hc } from "hono/client";
 export type { AppType } from "@openbots/api-contract";
 
 function getApiBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL;
-  if (!url) {
-    throw new Error(
-      "NEXT_PUBLIC_API_URL environment variable is required. " +
-        "Set it to the base URL of the API server (e.g. http://localhost:3001).",
-    );
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  return url;
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "http://localhost:3000";
 }
 
-export function createClient(baseUrl?: string) {
+export function createClient(
+  baseUrl?: string,
+  options?: Parameters<typeof hc>[1],
+) {
   const url = baseUrl ?? getApiBaseUrl();
-  return hc<AppType>(url);
+  return hc<AppType>(url, options);
 }
 
 export const api = createClient;
