@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { Badge } from "@openbots/ui/components/badge";
-import { Button } from "@openbots/ui/components/button";
-import { Card, CardContent } from "@openbots/ui/components/card";
-import { ScrollArea } from "@openbots/ui/components/scroll-area";
+import { Badge } from "@openbots/ui/components/badge"
+import { Button } from "@openbots/ui/components/button"
+import { Card, CardContent } from "@openbots/ui/components/card"
+import { ScrollArea } from "@openbots/ui/components/scroll-area"
 import {
   Sheet,
   SheetContent,
@@ -11,8 +11,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@openbots/ui/components/sheet";
-import { Spinner } from "@openbots/ui/components/spinner";
+} from "@openbots/ui/components/sheet"
+import { Spinner } from "@openbots/ui/components/spinner"
 import {
   IconBrandGmail,
   IconBrandNotion,
@@ -20,14 +20,14 @@ import {
   IconPlug,
   IconPlus,
   IconTrash,
-} from "@tabler/icons-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as React from "react";
-import { getClient } from "@/lib/api";
+} from "@tabler/icons-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import * as React from "react"
+import { getClient } from "@/lib/api"
 
 interface ConnectionsSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 const AVAILABLE_INTEGRATIONS = [
@@ -47,71 +47,71 @@ const AVAILABLE_INTEGRATIONS = [
     provider: "composio",
     accountId: "notion_connected_account",
   },
-] as const;
+] as const
 
 export function ConnectionsSheet({
   open,
   onOpenChange,
 }: ConnectionsSheetProps) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const { data: connectionsData, isLoading } = useQuery({
     queryKey: ["connections"],
     queryFn: async () => {
-      const client = getClient();
-      const res = await client.api.connections.$get();
-      if (!res.ok) return { connections: [] };
+      const client = getClient()
+      const res = await client.api.connections.$get()
+      if (!res.ok) return { connections: [] }
       return res.json() as Promise<{
         connections: Array<{
-          id: string;
-          provider: string;
-          externalAccountId: string;
-          status: string;
-          createdAt: string;
-        }>;
-      }>;
+          id: string
+          provider: string
+          externalAccountId: string
+          status: string
+          createdAt: string
+        }>
+      }>
     },
     enabled: open,
-  });
+  })
 
   const connectMutation = useMutation({
     mutationFn: async ({
       provider,
       externalAccountId,
     }: {
-      provider: string;
-      externalAccountId: string;
+      provider: string
+      externalAccountId: string
     }) => {
-      const client = getClient();
+      const client = getClient()
       const res = await client.api.connections.$post({
         json: {
           provider,
           externalAccountId,
         },
-      });
-      if (!res.ok) throw new Error("Failed to connect integration");
-      return res.json();
+      })
+      if (!res.ok) throw new Error("Failed to connect integration")
+      return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      queryClient.invalidateQueries({ queryKey: ["connections"] })
     },
-  });
+  })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const client = getClient();
+      const client = getClient()
       const res = await client.api.connections[":id"].$delete({
         param: { id },
-      });
-      if (!res.ok) throw new Error("Failed to disconnect integration");
-      return res.json();
+      })
+      if (!res.ok) throw new Error("Failed to disconnect integration")
+      return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      queryClient.invalidateQueries({ queryKey: ["connections"] })
     },
-  });
+  })
 
-  const connections = connectionsData?.connections || [];
+  const connections = connectionsData?.connections || []
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -127,50 +127,54 @@ export function ConnectionsSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 py-4 flex-1 overflow-hidden">
-          <div className="space-y-3">
-            <span className="text-xs font-semibold text-foreground tracking-tight">
+        <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4">
+          <div className="grid gap-3">
+            <span className="text-xs font-semibold tracking-tight text-foreground">
               Supported Integrations
             </span>
             <div className="grid gap-2.5">
               {AVAILABLE_INTEGRATIONS.map((integration) => {
-                const Icon = integration.icon;
+                const Icon = integration.icon
                 const activeConn = connections.find(
                   (c) =>
                     c.externalAccountId === integration.accountId ||
                     c.provider === integration.id ||
-                    c.externalAccountId.toLowerCase().includes(integration.id),
-                );
-                const isConnected = !!activeConn;
+                    c.externalAccountId.toLowerCase().includes(integration.id)
+                )
+                const isConnected = !!activeConn
                 const isPending =
                   (connectMutation.isPending &&
                     connectMutation.variables?.externalAccountId ===
                       integration.accountId) ||
                   (deleteMutation.isPending &&
-                    deleteMutation.variables === activeConn?.id);
+                    deleteMutation.variables === activeConn?.id)
 
                 return (
-                  <Card key={integration.id} size="sm" className="bg-muted/30">
-                    <CardContent className="flex items-center justify-between p-3">
-                      <div className="flex items-start gap-3 min-w-0 pr-3">
-                        <div className="p-2 rounded-lg bg-background border border-border/80 shrink-0 text-foreground">
+                  <Card
+                    key={integration.id}
+                    size="sm"
+                    className="bg-secondary py-1"
+                  >
+                    <CardContent className="flex items-center justify-between p-2">
+                      <div className="flex min-w-0 items-start gap-3 pr-2">
+                        <div className="shrink-0 rounded-lg border border-border/80 bg-background p-2 text-foreground">
                           <Icon className="size-5" />
                         </div>
-                        <div className="space-y-0.5 min-w-0">
+                        <div className="min-w-0 space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-xs text-foreground">
+                            <span className="text-xs font-medium text-foreground">
                               {integration.name}
                             </span>
                             {isConnected && (
                               <Badge
                                 variant="outline"
-                                className="text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 py-0 h-4"
+                                className="h-4 border-emerald-500/20 bg-emerald-500/10 py-0 text-[10px] text-emerald-600 dark:text-emerald-400"
                               >
                                 Connected
                               </Badge>
                             )}
                           </div>
-                          <p className="text-[11px] text-muted-foreground leading-snug">
+                          <p className="text-[11px] leading-snug text-muted-foreground">
                             {integration.description}
                           </p>
                         </div>
@@ -180,7 +184,6 @@ export function ConnectionsSheet({
                         <Button
                           size="xs"
                           variant="ghost"
-                          className="text-destructive hover:bg-destructive/10 shrink-0 text-xs gap-1"
                           onClick={() => deleteMutation.mutate(activeConn.id)}
                           disabled={isPending}
                         >
@@ -195,7 +198,7 @@ export function ConnectionsSheet({
                         <Button
                           size="xs"
                           variant="default"
-                          className="shrink-0 text-xs gap-1"
+                          className="shrink-0 gap-1 text-xs"
                           onClick={() =>
                             connectMutation.mutate({
                               provider: integration.provider,
@@ -214,12 +217,12 @@ export function ConnectionsSheet({
                       )}
                     </CardContent>
                   </Card>
-                );
+                )
               })}
             </div>
           </div>
 
-          <div className="space-y-2 flex-1 overflow-hidden flex flex-col pt-2">
+          <div className="flex flex-1 flex-col space-y-2 overflow-hidden pt-2">
             <span className="text-xs font-medium text-muted-foreground">
               Active Connected Accounts ({connections.length})
             </span>
@@ -238,9 +241,9 @@ export function ConnectionsSheet({
                   {connections.map((c) => (
                     <Card key={c.id} size="sm" className="bg-card">
                       <CardContent className="flex items-center justify-between p-3">
-                        <div className="space-y-0.5 min-w-0 pr-2">
+                        <div className="min-w-0 space-y-0.5 pr-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-xs text-foreground uppercase tracking-wider">
+                            <span className="text-xs font-semibold tracking-wider text-foreground uppercase">
                               {c.provider}
                             </span>
                             <Badge
@@ -250,14 +253,14 @@ export function ConnectionsSheet({
                               {c.status}
                             </Badge>
                           </div>
-                          <p className="text-[11px] font-mono text-muted-foreground truncate">
+                          <p className="truncate font-mono text-[11px] text-muted-foreground">
                             {c.externalAccountId}
                           </p>
                         </div>
                         <Button
                           size="icon-xs"
                           variant="ghost"
-                          className="size-7 text-destructive hover:bg-destructive/10 shrink-0"
+                          className="size-7 shrink-0 text-destructive hover:bg-destructive/10"
                           onClick={() => deleteMutation.mutate(c.id)}
                           disabled={deleteMutation.isPending}
                           title="Disconnect"
@@ -273,7 +276,7 @@ export function ConnectionsSheet({
           </div>
         </div>
 
-        <SheetFooter className="border-t border-border/60 bg-background/80 p-3 flex sm:justify-end">
+        <SheetFooter className="flex border-t border-border/60 bg-background/80 p-3 sm:justify-end">
           <Button
             size="sm"
             variant="outline"
@@ -285,5 +288,5 @@ export function ConnectionsSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
-  );
+  )
 }

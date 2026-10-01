@@ -86,6 +86,7 @@ function formatMsgTime(dateVal: string | Date): string {
     const timeStr = d.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true,
     })
     return `${dateStr}, ${timeStr}`
   } catch {

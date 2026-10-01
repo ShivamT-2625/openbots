@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { Button } from "@openbots/ui/components/button";
+import { Button } from "@openbots/ui/components/button"
 import {
   Dialog,
   DialogContent,
@@ -8,23 +8,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@openbots/ui/components/dialog";
-import { Field, FieldGroup, FieldLabel } from "@openbots/ui/components/field";
-import { Input } from "@openbots/ui/components/input";
+} from "@openbots/ui/components/dialog"
+import { Field, FieldGroup, FieldLabel } from "@openbots/ui/components/field"
+import { Input } from "@openbots/ui/components/input"
 import {
   NativeSelect,
   NativeSelectOption,
-} from "@openbots/ui/components/native-select";
-import { Spinner } from "@openbots/ui/components/spinner";
-import { Textarea } from "@openbots/ui/components/textarea";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as React from "react";
-import { getClient } from "@/lib/api";
+} from "@openbots/ui/components/native-select"
+import { Spinner } from "@openbots/ui/components/spinner"
+import { Textarea } from "@openbots/ui/components/textarea"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import * as React from "react"
+import { getClient } from "@/lib/api"
 
 interface CreateAgentDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAgentCreated: (agentId: string) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAgentCreated: (agentId: string) => void
 }
 
 export function CreateAgentDialog({
@@ -32,41 +32,41 @@ export function CreateAgentDialog({
   onOpenChange,
   onAgentCreated,
 }: CreateAgentDialogProps) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const { data: modelsData } = useQuery({
     queryKey: ["available-models"],
     queryFn: async () => {
-      const client = getClient();
-      const res = await client.api.agents.models.$get();
-      if (!res.ok) return { models: [] };
+      const client = getClient()
+      const res = await client.api.agents.models.$get()
+      if (!res.ok) return { models: [] }
       return res.json() as Promise<{
         models: Array<{
-          id: string;
-          displayName: string;
-          description?: string;
-        }>;
-      }>;
+          id: string
+          displayName: string
+          description?: string
+        }>
+      }>
     },
     enabled: open,
-  });
+  })
 
-  const availableModels = modelsData?.models || [];
+  const availableModels = modelsData?.models || []
 
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
+  const [name, setName] = React.useState("")
+  const [description, setDescription] = React.useState("")
   const [instructions, setInstructions] = React.useState(
-    "You are a helpful assistant. Use tools when helpful to answer questions.",
-  );
-  const [model, setModel] = React.useState("google/gemini-2.5-flash");
-  const [maxSteps, setMaxSteps] = React.useState(10);
-  const [autonomy, setAutonomy] = React.useState<"manual">("manual");
-  const [error, setError] = React.useState<string | null>(null);
+    "You are a helpful assistant. Use tools when helpful to answer questions."
+  )
+  const [model, setModel] = React.useState("google/gemini-2.5-flash")
+  const [maxSteps, setMaxSteps] = React.useState(10)
+  const [autonomy, setAutonomy] = React.useState<"manual">("manual")
+  const [error, setError] = React.useState<string | null>(null)
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      setError(null);
-      const client = getClient();
+      setError(null)
+      const client = getClient()
       const res = await client.api.agents.$post({
         json: {
           name: name.trim(),
@@ -76,45 +76,45 @@ export function CreateAgentDialog({
           maxSteps: Number(maxSteps) || 10,
           autonomy,
         },
-      });
+      })
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data?.error || "Failed to create agent");
+        const data = (await res.json()) as { error?: string }
+        throw new Error(data?.error || "Failed to create agent")
       }
 
-      return res.json() as Promise<{ agent: { id: string } }>;
+      return res.json() as Promise<{ agent: { id: string } }>
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["agents"] });
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["agents"] })
+      onOpenChange(false)
       // Reset form
-      setName("");
-      setDescription("");
+      setName("")
+      setDescription("")
       if (data?.agent?.id) {
-        onAgentCreated(data.agent.id);
+        onAgentCreated(data.agent.id)
       }
     },
     onError: (err: Error) => {
-      setError(err.message);
+      setError(err.message)
     },
-  });
+  })
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!name.trim()) {
-      setError("Agent name is required.");
-      return;
+      setError("Agent name is required.")
+      return
     }
-    createMutation.mutate();
-  };
+    createMutation.mutate()
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Agent</DialogTitle>
+            <DialogTitle>New Agent</DialogTitle>
             <DialogDescription>
               Configure the identity, instructions, and execution boundaries for
               your agent.
@@ -158,7 +158,7 @@ export function CreateAgentDialog({
               <Textarea
                 id="instructions"
                 rows={4}
-                className="font-mono text-xs"
+                className="max-h-40 font-mono text-xs"
                 placeholder="Define your agent's behavior and tool usage directives..."
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
@@ -242,5 +242,5 @@ export function CreateAgentDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
