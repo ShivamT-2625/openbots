@@ -4,7 +4,7 @@ import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
-import { agentTools, connections, db } from "@openbots/db";
+import { agentTools, connections, db, schedules } from "@openbots/db";
 import { jsonSchema, tool } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -160,6 +160,60 @@ export const calculate = tool({
   },
 });
 
+export function createScheduleTool(userId: string, agentId: string) {
+  return tool({
+    description:
+      "Create a scheduled task that runs this agent on a recurring schedule. Use this to set up automated recurring tasks like daily summaries, hourly checks, or weekly reports.",
+    inputSchema: z.object({
+      name: z.string().describe("A short name for the schedule"),
+      prompt: z
+        .string()
+        .describe(
+          "The prompt/instruction to run on each scheduled execution",
+        ),
+      cronExpression: z
+        .string()
+        .describe(
+          "A standard cron expression (5 fields: minute hour day-of-month month day-of-week). Examples: '0 9 * * *' for daily at 9am, '*/30 * * * *' for every 30 minutes, '0 9 * * 1' for every Monday at 9am.",
+        ),
+      timezone: z
+        .string()
+        .optional()
+        .describe(
+          "IANA timezone for the schedule (e.g. 'America/New_York', 'Asia/Tokyo'). Defaults to UTC.",
+        ),
+    }),
+    execute: async ({ name, prompt, cronExpression, timezone }) => {
+      const inserted = await db
+        .insert(schedules)
+        .values({
+          userId,
+          agentId,
+          name,
+          prompt,
+          cronExpression,
+          timezone: timezone ?? "UTC",
+          status: "active",
+        })
+        .returning();
+      const schedule = inserted[0];
+
+      if (!schedule) {
+        throw new Error("Failed to create schedule");
+      }
+
+      return {
+        scheduleId: schedule.id,
+        name: schedule.name,
+        cronExpression: schedule.cronExpression,
+        timezone: schedule.timezone,
+        status: schedule.status,
+        message: `Schedule '${name}' created. It will run with cron expression '${cronExpression}' in timezone ${timezone ?? "UTC"}.`,
+      };
+    },
+  });
+}
+
 export const internalTools: Record<string, any> = {
   get_current_time: getCurrentTime,
   calculate: calculate,
@@ -202,25 +256,17 @@ export async function buildAgentTools(params: {
     .from(agentTools)
     .where(and(eq(agentTools.agentId, agentId), eq(agentTools.enabled, true)));
 
-  const activeTools: Record<string, any> = {};
+  const activeTools: Record<string, any> = {
+    create_schedule: createScheduleTool(userId, agentId),
+  };
   const cleanupTasks: Array<() => Promise<void>> = [];
 
-  for (const config of configuredTools) {
-    if (config.provider === "internal") {
-      const found = internalTools[config.toolName];
-      if (found) {
-        activeTools[config.toolName] = found;
-      }
-    } else if (config.provider === "composio") {
-      const apiKey = process.env.COMPOSIO_API_KEY;
-      if (!apiKey) {
-        throw new Error(
-          `COMPOSIO_API_KEY is required to execute Composio tool '${config.toolName}'`,
-        );
-      }
-
+  // Auto-inject Composio session meta-tools when API key is available
+  const composioApiKey = process.env.COMPOSIO_API_KEY;
+  if (composioApiKey) {
+    try {
       const composio = new Composio({
-        apiKey,
+        apiKey: composioApiKey,
         provider: new VercelProvider(),
       });
 
@@ -268,13 +314,30 @@ export async function buildAgentTools(params: {
         }
       }
 
-      const composioTools = (await session.tools()) as Record<
-        string,
-        ReturnType<typeof tool>
-      >;
-      const matched = composioTools[config.toolName];
-      if (matched) {
-        activeTools[config.toolName] = matched;
+      const composioTools = await session.tools();
+      if (Array.isArray(composioTools)) {
+        for (const t of composioTools) {
+          if (t && typeof t === "object" && "name" in t) {
+            activeTools[t.name] = t;
+          }
+        }
+      } else if (composioTools && typeof composioTools === "object") {
+        for (const [key, value] of Object.entries(composioTools)) {
+          if (value) {
+            activeTools[key] = value;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to initialize Composio session:", err);
+    }
+  }
+
+  for (const config of configuredTools) {
+    if (config.provider === "internal") {
+      const found = internalTools[config.toolName];
+      if (found) {
+        activeTools[config.toolName] = found;
       }
     } else if (config.provider === "mcp") {
       const mcpConfig = config.config as { url?: string } | null;

@@ -3,7 +3,7 @@
 import { Button } from "@openbots/ui/components/button"
 import { Spinner } from "@openbots/ui/components/spinner"
 import { Textarea } from "@openbots/ui/components/textarea"
-import { IconArrowUpRight, IconPlayerStop, IconSend } from "@tabler/icons-react"
+import { IconArrowUp, IconPlayerStop } from "@tabler/icons-react"
 import * as React from "react"
 
 interface InputComposerProps {
@@ -22,16 +22,21 @@ export function InputComposer({
   isActiveRun,
   onCancelRun,
   isCancelling,
-  placeholder = "Send a task to your agent...",
+  placeholder = "Message your agent...",
   disabled,
 }: InputComposerProps) {
   const [text, setText] = React.useState("")
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 
   const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
+    e?.preventDefault()
+
     const trimmed = text.trim()
-    if (!trimmed || isSubmitting || isActiveRun || disabled) return
+
+    if (!trimmed || isSubmitting || isActiveRun || disabled) {
+      return
+    }
+
     onSend(trimmed)
     setText("")
   }
@@ -44,67 +49,51 @@ export function InputComposer({
   }
 
   return (
-    <div className="w-full bg-background/95 p-1 backdrop-blur-xs">
-      <div className="mx-auto max-w-4xl">
-        <form onSubmit={handleSubmit} className="relative flex flex-col gap-2">
-          <div className="relative rounded-lg border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+    <div className="w-full px-3 pb-3">
+      <div className="mx-auto max-w-3xl">
+        <form onSubmit={handleSubmit}>
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-background ring-border transition focus-within:ring-2">
             <Textarea
               ref={textareaRef}
-              rows={2}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               disabled={disabled || isSubmitting || isActiveRun}
-              className="resize-none rounded-b-none border-none bg-transparent text-sm shadow-none focus-visible:ring-0 md:text-sm"
+              rows={1}
+              className="max-h-48 min-h-12 resize-none border-0 bg-transparent px-4 py-3.5 pr-14 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
 
-            <div className="flex items-center justify-between border-t border-border/40 p-1.5 text-xs">
-              <span className="hidden text-[11px] text-muted-foreground sm:inline">
-                <kbd className="rounded border border-border bg-muted px-1 font-mono text-[12px]">
-                  ↵
-                </kbd>{" "}
-                submit{" "}
-                <kbd className="ml-1 rounded border border-border bg-muted px-1 font-mono text-[12px]">
-                  ⇧↵
-                </kbd>{" "}
-                newline
-              </span>
-
-              <div className="ml-auto flex items-center gap-2">
-                {isActiveRun && onCancelRun && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon-sm"
-                    onClick={onCancelRun}
-                    disabled={isCancelling}
-                    className="size-7"
-                  >
-                    {isCancelling ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : (
-                      <IconPlayerStop data-icon="inline-start" />
-                    )}
-                  </Button>
-                )}
-
+            <div className="absolute right-2 bottom-2">
+              {isActiveRun && onCancelRun ? (
                 <Button
-                  type="submit"
-                  size="sm"
-                  disabled={
-                    !text.trim() || isSubmitting || isActiveRun || disabled
-                  }
-                  className="h-7 px-2.5 text-xs"
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={onCancelRun}
+                  disabled={isCancelling}
+                  className="size-8 rounded-full"
                 >
-                  <span>Send</span>
-                  {isSubmitting ? (
-                    <Spinner data-icon="inline-start" />
+                  {isCancelling ? (
+                    <Spinner />
                   ) : (
-                    <IconArrowUpRight data-icon="inline-start" />
+                    <IconPlayerStop className="size-4" />
                   )}
                 </Button>
-              </div>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!text.trim() || isSubmitting || disabled}
+                  className="size-8 rounded-full"
+                >
+                  {isSubmitting ? (
+                    <Spinner />
+                  ) : (
+                    <IconArrowUp className="size-4" />
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </form>

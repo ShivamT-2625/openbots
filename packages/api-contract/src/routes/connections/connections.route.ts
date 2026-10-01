@@ -5,9 +5,13 @@ import {
   createConnection,
   deleteConnection,
   getConnection,
+  initiateConnection,
   listConnections,
 } from "./connections.logic.js";
-import { createConnectionSchema } from "./connections.schema.js";
+import {
+  createConnectionSchema,
+  initiateConnectionSchema,
+} from "./connections.schema.js";
 
 type Env = {
   Variables: {
@@ -37,6 +41,22 @@ export const connectionsRoute = new Hono<Env>()
     const result = await createConnection(user.id, data);
     return c.json(result, 201);
   })
+  .post(
+    "/initiate",
+    zValidator("json", initiateConnectionSchema),
+    async (c) => {
+      const user = c.get("user");
+      const { appName } = c.req.valid("json");
+      try {
+        const result = await initiateConnection(user.id, appName);
+        return c.json(result);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to initiate connection";
+        return c.json({ error: message }, 500);
+      }
+    },
+  )
   .delete("/:id", async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");

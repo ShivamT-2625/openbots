@@ -109,7 +109,7 @@ export function ConversationTimeline({
     activeRun?.status === "running"
 
   return (
-    <MessageScrollerProvider autoScroll>
+    <MessageScrollerProvider>
       <MessageScroller className="flex-1">
         <MessageScrollerViewport className="border-none! px-4 py-6 ring-2! outline-none!">
           <MessageScrollerContent className="mx-auto max-w-4xl space-y-6">

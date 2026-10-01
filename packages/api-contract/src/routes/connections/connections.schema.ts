@@ -16,3 +16,11 @@ export const createConnectionSchema = z.object({
 });
 
 export type CreateConnectionInput = z.infer<typeof createConnectionSchema>;
+
+export const initiateConnectionSchema = z.object({
+  appName: z.string().min(1),
+});
+
+export type InitiateConnectionInput = z.infer<
+  typeof initiateConnectionSchema
+>;

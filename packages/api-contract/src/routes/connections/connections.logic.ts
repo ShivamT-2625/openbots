@@ -1,3 +1,4 @@
+import { Composio } from "@composio/core";
 import { connections, db } from "@openbots/db";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -65,4 +66,64 @@ export async function deleteConnection(id: string, userId: string) {
   }
 
   return { connection: deleted };
+}
+
+export async function initiateConnection(userId: string, appName: string) {
+  const apiKey = process.env.COMPOSIO_API_KEY;
+  if (!apiKey) {
+    throw new Error("COMPOSIO_API_KEY is required for initiating connections");
+  }
+
+  const composio = new Composio({ apiKey });
+
+  // 1. Get toolkit metadata to find available auth configs
+  const toolkit = (await composio.toolkits.get(appName.toLowerCase())) as any;
+  const authConfigs: any[] = toolkit.authConfigDetails?.items ?? [];
+  const primaryConfig =
+    authConfigs.find((c: any) => c.status === "ENABLED") ?? authConfigs[0];
+
+  let redirectUrl: string | null = null;
+  let connectionRequestId: string | null = null;
+
+  if (primaryConfig?.id) {
+    // Preferred: link using authConfigId directly
+    const linkResult = await composio.connectedAccounts.link(userId, primaryConfig.id);
+    redirectUrl = linkResult.redirectUrl ?? null;
+    connectionRequestId = linkResult.id ?? null;
+  } else {
+    // Fallback: authorize toolkit
+    const authResult = await composio.toolkits.authorize(userId, appName.toLowerCase());
+    redirectUrl = authResult.redirectUrl ?? null;
+    connectionRequestId = authResult.id ?? null;
+  }
+
+  if (!redirectUrl) {
+    throw new Error(
+      `No redirect URL returned for ${appName}. The app may not support OAuth or may already be connected.`,
+    );
+  }
+
+  await db
+    .insert(connections)
+    .values({
+      userId,
+      provider: appName.toLowerCase(),
+      externalAccountId: connectionRequestId ?? `${appName.toLowerCase()}_${Date.now()}`,
+      status: "active",
+      metadata: { initiatedAt: new Date().toISOString() },
+    })
+    .onConflictDoUpdate({
+      target: [
+        connections.userId,
+        connections.provider,
+        connections.externalAccountId,
+      ],
+      set: {
+        status: "active",
+        metadata: { initiatedAt: new Date().toISOString() },
+        updatedAt: new Date(),
+      },
+    });
+
+  return { redirectUrl };
 }

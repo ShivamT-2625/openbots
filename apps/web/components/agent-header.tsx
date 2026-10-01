@@ -29,7 +29,7 @@ export function AgentHeader({
   onOpenSchedules,
 }: AgentHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex w-full shrink-0 items-center justify-between border-b border-border bg-background/50 p-2 backdrop-blur-xs">
+    <header className="sticky top-0 z-30 flex w-full shrink-0 items-center justify-between border-b border-sidebar-accent bg-background/50 p-2 backdrop-blur-xs">
       <div className="flex items-center gap-3">
         {selectedAgent ? (
           <div className="flex items-center gap-2">
@@ -44,10 +44,10 @@ export function AgentHeader({
               <Badge variant="secondary" className="font-mono text-[10px]">
                 {selectedAgent.model.replace("google/", "")}
               </Badge>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="secondary" className="text-[10px]">
                 {selectedAgent.autonomy}
               </Badge>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="secondary" className="text-[10px]">
                 {selectedAgent.maxSteps} steps
               </Badge>
             </div>
@@ -65,7 +65,7 @@ export function AgentHeader({
           <>
             {onOpenConnections && (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={onOpenConnections}
                 className="h-6 gap-1.5 text-xs"
@@ -78,7 +78,7 @@ export function AgentHeader({
 
             {onOpenSchedules && (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={onOpenSchedules}
                 className="h-6 gap-1.5 text-xs"
@@ -90,7 +90,7 @@ export function AgentHeader({
             )}
 
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={onOpenHistory}
               className="h-6 gap-1.5 text-xs"
@@ -101,7 +101,7 @@ export function AgentHeader({
             </Button>
 
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={onOpenConfigure}
               className="h-6 gap-1.5 text-xs"
