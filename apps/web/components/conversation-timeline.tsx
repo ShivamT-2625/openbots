@@ -115,8 +115,12 @@ export function ConversationTimeline({
             {messages.length === 0 && !activeRun && (
               <MessageScrollerItem>
                 <div className="py-16 text-center">
-                  <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <IconRobot className="size-6" />
+                  <div className="flex items-center justify-center">
+                    <Blobatar
+                      name={agentName}
+                      alt={agentName}
+                      className={"size-10!"}
+                    />
                   </div>
                   <h3 className="font-heading text-sm font-medium text-foreground">
                     Ready to chat with {agentName}

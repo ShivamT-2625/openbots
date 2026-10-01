@@ -29,10 +29,10 @@ export function AgentHeader({
   onOpenSchedules,
 }: AgentHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex w-full shrink-0 items-center justify-between border-b border-border bg-background/50 p-3 backdrop-blur-xs">
+    <header className="sticky top-0 z-30 flex w-full shrink-0 items-center justify-between border-b border-border bg-background/50 p-2 backdrop-blur-xs">
       <div className="flex items-center gap-3">
         {selectedAgent ? (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Blobatar
               name={selectedAgent.name || selectedAgent.id}
               className="size-7 shrink-0"
@@ -68,7 +68,7 @@ export function AgentHeader({
                 variant="outline"
                 size="sm"
                 onClick={onOpenConnections}
-                className="h-7 gap-1.5 text-xs"
+                className="h-6 gap-1.5 text-xs"
                 title="Integrations & Tools"
               >
                 <IconPlug className="size-3.5" />
@@ -81,7 +81,7 @@ export function AgentHeader({
                 variant="outline"
                 size="sm"
                 onClick={onOpenSchedules}
-                className="h-7 gap-1.5 text-xs"
+                className="h-6 gap-1.5 text-xs"
                 title="Scheduled Autonomous Tasks"
               >
                 <IconCalendar className="size-3.5" />
@@ -93,7 +93,7 @@ export function AgentHeader({
               variant="outline"
               size="sm"
               onClick={onOpenHistory}
-              className="h-7 gap-1.5 text-xs"
+              className="h-6 gap-1.5 text-xs"
               title="Execution History"
             >
               <IconHistory className="size-3.5" />
@@ -104,7 +104,7 @@ export function AgentHeader({
               variant="outline"
               size="sm"
               onClick={onOpenConfigure}
-              className="h-7 gap-1.5 text-xs"
+              className="h-6 gap-1.5 text-xs"
               title="Agent Settings"
             >
               <IconSettings className="size-3.5" />

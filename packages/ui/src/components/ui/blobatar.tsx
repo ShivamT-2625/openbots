@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import type * as React from "react";
+import type * as React from "react"
 /**
  * Aliased, because the component this file exports is also called `Blobatar` —
  * `BlobatarAvatar` says blob-avatar-avatar, and the name a shadcn project wants
@@ -11,12 +11,12 @@ import type * as React from "react";
  * `name` *and* a `src` and renders an Avatar that falls back to the picture. A
  * project that imports both wants the aliasing to be deliberate.
  */
-import { Blobatar as Generated } from "@blobatar/react";
+import { Blobatar as Generated } from "@blobatar/react"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@openbots/ui/components/avatar";
+} from "@openbots/ui/components/avatar"
 
 /**
  * Distributive, and that is not pedantry. The generated blobatar's props are a
@@ -26,23 +26,23 @@ import {
  */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
-  : never;
+  : never
 
 type GeneratedOptions = DistributiveOmit<
   React.ComponentProps<typeof Generated>,
   "name"
->;
+>
 
 export type BlobatarProps = React.ComponentProps<typeof Avatar> & {
   /**
    * Who the avatar is for. A username, a display name, an email, an id — any
    * string, and the same string always renders the same blobatar.
    */
-  name: string;
+  name: string
   /** A real profile image, when there is one. The blobatar is the fallback. */
-  src?: string;
+  src?: string
   /** Defaults to `name`. Ignored when there is no `src`. */
-  alt?: string;
+  alt?: string
   /**
    * Anything else the blobatar takes: `palette`, `animate`, `expression`, …
    *
@@ -51,33 +51,22 @@ export type BlobatarProps = React.ComponentProps<typeof Avatar> & {
    * default when the name is already written next to the avatar, and the wrong
    * one when the avatar stands alone. Pass `{ title: name }` in that case.
    */
-  blobatar?: GeneratedOptions;
-};
+  blobatar?: GeneratedOptions
+}
 
 export function Blobatar({
   name,
   src,
   alt,
   blobatar,
+  className,
   ...props
 }: BlobatarProps) {
   return (
-    <Avatar className="size-10" {...props}>
-      {src ? <AvatarImage src={src} alt={alt ?? name} /> : null}
-      {/*
-        `bg-transparent` overrides the fallback's `bg-muted`, and it is the one
-        place this file touches a component's own colors. It has to: the
-        blobatar *is* the fill, and a muted plate behind a transparent-background
-        blobatar reads as a loading state that never resolves. Give the blobatar
-        a `background` instead if you want a plate.
-
-        `size-full` overrides the width/height attributes the blobatar renders
-        from its `size`, so the picture follows the Avatar's box — `size-8` by
-        default, whatever you pass otherwise — rather than fighting it.
-      */}
-      <AvatarFallback className="bg-transparent">
-        <Generated {...blobatar} name={name} className="size-full" />
-      </AvatarFallback>
-    </Avatar>
-  );
+    <Generated
+      {...blobatar}
+      name={name}
+      className={`m-0! size-7 rounded-full px-0! ${className}`}
+    />
+  )
 }

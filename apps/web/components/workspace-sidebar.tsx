@@ -4,34 +4,174 @@ import { Avatar, AvatarFallback } from "@openbots/ui/components/avatar"
 import { Blobatar } from "@openbots/ui/components/ui/blobatar"
 import { Button } from "@openbots/ui/components/button"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@openbots/ui/components/dropdown-menu"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@openbots/ui/components/input-group"
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
-  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from "@openbots/ui/components/sidebar"
+import { cn } from "@openbots/ui/lib/utils"
 import {
+  IconLayoutSidebarLeftExpand,
   IconLogout,
   IconPlus,
-  IconRobot,
   IconSearch,
+  IconSettings,
 } from "@tabler/icons-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
 import type { AgentData } from "@/components/configure-agent-sheet"
 import { signOut, useSession } from "@/lib/auth-client"
-import { cn } from "@openbots/ui/lib/utils"
 
 interface WorkspaceSidebarProps {
   agents: AgentData[]
   onOpenCreate: () => void
+}
+
+const rowClass =
+  "rounded-xl text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+
+function BrandRow({ onClickButton }: { onClickButton: () => void }) {
+  const { state, isMobile, toggleSidebar } = useSidebar()
+  const collapsed = state === "collapsed" && !isMobile
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        {collapsed ? (
+          // Collapsed: single button that expands the sidebar
+          <SidebarMenuButton
+            tooltip="Expand sidebar"
+            onClick={toggleSidebar}
+            className={rowClass}
+          >
+            <IconLayoutSidebarLeftExpand />
+          </SidebarMenuButton>
+        ) : (
+          // Expanded: logo + wordmark, new agent button on the right
+          <div className="flex h-8 items-center gap-1 rounded-md">
+            <Blobatar name="openbots" className="size-7" />
+            <span className="text-sm font-semibold tracking-tight">
+              OpenBots
+            </span>
+            <Button
+              size="icon-xs"
+              className="ml-auto"
+              onClick={onClickButton}
+              title="New agent"
+            >
+              <IconPlus />
+            </Button>
+          </div>
+        )}
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
+
+function UserMenu({
+  name,
+  email,
+  initials,
+  onSettings,
+  onSignOut,
+}: {
+  name: string
+  email?: string
+  initials: string
+  onSettings: () => void
+  onSignOut: () => void
+}) {
+  const { isMobile } = useSidebar()
+
+  return (
+    <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                size="lg"
+                tooltip={name}
+                className={cn(
+                  rowClass,
+                  "group-data-[collapsible=icon]:p-0! data-popup-open:bg-sidebar-accent"
+                )}
+              />
+            }
+          >
+            <Avatar className="size-8 shrink-0 group-data-[collapsible=icon]:size-7">
+              <AvatarFallback className="bg-sidebar-accent text-xs font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+
+            <span className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden">
+              <span className="block truncate text-[13px] font-medium">
+                {name}
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {email}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            side={isMobile ? "bottom" : "right"}
+            align="end"
+            sideOffset={8}
+            className="min-w-56 rounded-xl"
+          >
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              <Avatar className="size-8">
+                <AvatarFallback className="bg-sidebar-accent text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {email}
+                </p>
+              </div>
+            </div>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem onClick={onSettings}>
+              <IconSettings />
+              Settings
+            </DropdownMenuItem>
+
+            <DropdownMenuItem variant="destructive" onClick={onSignOut}>
+              <IconLogout />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
 }
 
 export function WorkspaceSidebar({
@@ -45,7 +185,6 @@ export function WorkspaceSidebar({
 
   const filteredAgents = React.useMemo(() => {
     const query = search.trim().toLowerCase()
-
     if (!query) return agents
 
     return agents.filter(
@@ -73,55 +212,35 @@ export function WorkspaceSidebar({
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="group">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-xs">
-                <IconRobot className="size-4" />
-              </span>
+      <SidebarHeader className="px-3">
+        <BrandRow onClickButton={onOpenCreate} />
 
-              <span className="font-mono text-sm font-bold">OpenBots</span>
-
-              <SidebarTrigger className="ml-auto size-7 opacity-0 transition-opacity group-hover:opacity-100" />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Button />}
-              tooltip="New agent"
-              onClick={onOpenCreate}
-            >
-              <IconPlus />
-              <span className="group-data-[collapsible=icon]:hidden">
-                New agent
-              </span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
-        <SidebarInput
-          placeholder="Search agents..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-8 bg-sidebar-accent/40 text-xs"
-        />
+        <InputGroup className="mt-2 h-8 bg-background shadow-none group-data-[collapsible=icon]:hidden">
+          <InputGroupAddon>
+            <IconSearch />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder="Search agents"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </InputGroup>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="mt-1 px-1">
         <SidebarGroup>
           <SidebarGroupContent>
             {filteredAgents.length === 0 ? (
-              <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+              <p className="px-2 py-6 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
                 {search
                   ? "No agents match your search"
                   : "No agents created yet"}
               </p>
             ) : (
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5 gap-2">
                 {filteredAgents.map((agent) => {
                   const isActive = pathname === `/agent/${agent.id}`
+                  const isOnline = agent.status === "active"
 
                   return (
                     <SidebarMenuItem key={agent.id}>
@@ -129,31 +248,35 @@ export function WorkspaceSidebar({
                         render={<Link href={`/agent/${agent.id}`} />}
                         isActive={isActive}
                         tooltip={agent.name}
-                        className="h-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0!"
+                        className={cn(
+                          rowClass,
+                          "h-11 rounded-md group-data-[collapsible=icon]:p-0!"
+                        )}
                       >
-                        <Blobatar
-                          name={agent.name || agent.id}
-                          className="size-7 shrink-0"
-                        />
+                        {/* Avatar + status dot (dot sits on the avatar when collapsed) */}
+                        <span className="relative flex shrink-0 group-data-[collapsible=icon]:mx-auto">
+                          <Blobatar
+                            name={agent.name || agent.id}
+                            className="size-7 group-data-[collapsible=icon]:size-6"
+                          />
+                          <span
+                            className={cn(
+                              "absolute -right-0.5 -bottom-0.5 hidden size-2 rounded-full ring-2 ring-sidebar group-data-[collapsible=icon]:block",
+                              isOnline
+                                ? "bg-emerald-500"
+                                : "bg-muted-foreground/40"
+                            )}
+                          />
+                        </span>
 
                         <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-                          <span className="block truncate text-xs font-medium">
+                          <span className="block truncate text-[13px] font-medium">
                             {agent.name}
                           </span>
-
-                          <span className="block truncate text-[10px] text-muted-foreground">
+                          <span className="block truncate text-[11px] text-muted-foreground">
                             {agent.description}
                           </span>
                         </span>
-
-                        <span
-                          className={cn(
-                            "size-2 shrink-0 rounded-full group-data-[collapsible=icon]:hidden",
-                            agent.status === "active"
-                              ? "bg-emerald-500"
-                              : "bg-muted-foreground/40"
-                          )}
-                        />
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
@@ -165,40 +288,20 @@ export function WorkspaceSidebar({
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip={session?.user?.name || "User"}
-            >
-              <Avatar className="size-7 shrink-0">
-                <AvatarFallback className="text-xs font-semibold">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
+        <div className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col">
+          <UserMenu
+            name={session?.user?.name || "User"}
+            email={session?.user?.email}
+            initials={userInitials}
+            onSettings={() => router.push("/settings")}
+            onSignOut={handleSignOut}
+          />
 
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-medium">
-                  {session?.user?.name || "User"}
-                </span>
-                <span className="block truncate text-[10px] text-muted-foreground">
-                  {session?.user?.email}
-                </span>
-              </span>
-
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={handleSignOut}
-                title="Sign out"
-              >
-                <IconLogout className="size-4" />
-              </Button>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+          <SidebarTrigger className="size-8 shrink-0 text-muted-foreground hover:text-foreground" />
+        </div>
       </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   )
 }
