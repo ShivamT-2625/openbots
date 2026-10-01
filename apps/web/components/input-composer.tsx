@@ -80,12 +80,12 @@ export function InputComposer({
                     size="sm"
                     onClick={onCancelRun}
                     disabled={isCancelling}
-                    className="h-7 gap-1 px-2.5 text-xs"
+                    className="h-7 px-2.5 text-xs"
                   >
                     {isCancelling ? (
-                      <Spinner className="size-3" />
+                      <Spinner data-icon="inline-start" />
                     ) : (
-                      <IconPlayerStop className="size-3.5" />
+                      <IconPlayerStop data-icon="inline-start" />
                     )}
                     <span>Cancel Run</span>
                   </Button>
@@ -97,12 +97,12 @@ export function InputComposer({
                   disabled={
                     !text.trim() || isSubmitting || isActiveRun || disabled
                   }
-                  className="h-7 gap-1 px-2.5 text-xs"
+                  className="h-7 px-2.5 text-xs"
                 >
                   {isSubmitting ? (
-                    <Spinner className="size-3" />
+                    <Spinner data-icon="inline-start" />
                   ) : (
-                    <IconSend className="size-3.5" />
+                    <IconSend data-icon="inline-start" />
                   )}
                   <span>Send</span>
                 </Button>

@@ -67,9 +67,9 @@ export function AgentHeader({
             variant="outline"
             size="sm"
             onClick={onOpenCreate}
-            className="gap-1 text-xs"
+            className="text-xs"
           >
-            <IconPlus className="size-3.5" />
+            <IconPlus data-icon="inline-start" />
             <span className="hidden sm:inline">New Agent</span>
           </Button>
         </div>
@@ -98,9 +98,9 @@ export function AgentHeader({
               variant="outline"
               size="sm"
               onClick={onOpenHistory}
-              className="gap-1.5 text-xs"
+              className="text-xs"
             >
-              <IconHistory className="size-3.5" />
+              <IconHistory data-icon="inline-start" />
               <span>Runs</span>
             </Button>
 
@@ -108,9 +108,9 @@ export function AgentHeader({
               variant="outline"
               size="sm"
               onClick={onOpenConfigure}
-              className="gap-1.5 text-xs"
+              className="text-xs"
             >
-              <IconSettings className="size-3.5" />
+              <IconSettings data-icon="inline-start" />
               <span className="hidden sm:inline">Configure</span>
             </Button>
           </>

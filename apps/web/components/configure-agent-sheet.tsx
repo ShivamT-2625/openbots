@@ -3,6 +3,7 @@
 import { Badge } from "@openbots/ui/components/badge";
 import { Button } from "@openbots/ui/components/button";
 import { Card, CardContent } from "@openbots/ui/components/card";
+import { Field, FieldGroup, FieldLabel } from "@openbots/ui/components/field";
 import { Input } from "@openbots/ui/components/input";
 import {
   NativeSelect,
@@ -218,93 +219,72 @@ export function ConfigureAgentSheet({
                 </div>
               )}
 
-              <div className="grid gap-1.5">
-                <label
-                  htmlFor="cfg-name"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Agent Name
-                </label>
-                <Input
-                  id="cfg-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="grid gap-1.5">
-                <label
-                  htmlFor="cfg-desc"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Description
-                </label>
-                <Input
-                  id="cfg-desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Optional description"
-                />
-              </div>
-
-              <div className="grid gap-1.5">
-                <label
-                  htmlFor="cfg-instructions"
-                  className="text-xs font-medium text-foreground"
-                >
-                  System Instructions
-                </label>
-                <Textarea
-                  id="cfg-instructions"
-                  rows={6}
-                  className="font-mono text-xs"
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="cfg-model"
-                    className="text-xs font-medium text-foreground"
-                  >
-                    Model
-                  </label>
-                  <NativeSelect
-                    id="cfg-model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    className="w-full"
-                  >
-                    <NativeSelectOption value="google/gemini-2.5-flash">
-                      Gemini 2.5 Flash
-                    </NativeSelectOption>
-                    <NativeSelectOption value="google/gemini-2.5-pro">
-                      Gemini 2.5 Pro
-                    </NativeSelectOption>
-                  </NativeSelect>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="cfg-steps"
-                    className="text-xs font-medium text-foreground"
-                  >
-                    Max Steps
-                  </label>
+              <FieldGroup className="gap-4">
+                <Field>
+                  <FieldLabel htmlFor="cfg-name">Agent Name</FieldLabel>
                   <Input
-                    id="cfg-steps"
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={maxSteps}
-                    onChange={(e) => setMaxSteps(Number(e.target.value))}
+                    id="cfg-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
                   />
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="cfg-desc">Description</FieldLabel>
+                  <Input
+                    id="cfg-desc"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Optional description"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="cfg-instructions">
+                    System Instructions
+                  </FieldLabel>
+                  <Textarea
+                    id="cfg-instructions"
+                    rows={6}
+                    className="font-mono text-xs"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="cfg-model">Model</FieldLabel>
+                    <NativeSelect
+                      id="cfg-model"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full"
+                    >
+                      <NativeSelectOption value="google/gemini-2.5-flash">
+                        Gemini 2.5 Flash
+                      </NativeSelectOption>
+                      <NativeSelectOption value="google/gemini-2.5-pro">
+                        Gemini 2.5 Pro
+                      </NativeSelectOption>
+                    </NativeSelect>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="cfg-steps">Max Steps</FieldLabel>
+                    <Input
+                      id="cfg-steps"
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={maxSteps}
+                      onChange={(e) => setMaxSteps(Number(e.target.value))}
+                    />
+                  </Field>
                 </div>
-              </div>
+              </FieldGroup>
 
               <div className="pt-2">
                 <Button
@@ -313,7 +293,7 @@ export function ConfigureAgentSheet({
                   disabled={updateAgentMutation.isPending}
                 >
                   {updateAgentMutation.isPending && (
-                    <Spinner className="mr-1.5 size-3.5" />
+                    <Spinner data-icon="inline-start" />
                   )}
                   Save Changes
                 </Button>

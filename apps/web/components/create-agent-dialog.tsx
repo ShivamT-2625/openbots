@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@openbots/ui/components/dialog";
+import { Field, FieldGroup, FieldLabel } from "@openbots/ui/components/field";
 import { Input } from "@openbots/ui/components/input";
 import {
   NativeSelect,
@@ -101,20 +102,15 @@ export function CreateAgentDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <FieldGroup className="gap-4 py-4">
             {error && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {error}
               </div>
             )}
 
-            <div className="grid gap-1.5">
-              <label
-                htmlFor="name"
-                className="text-xs font-medium text-foreground"
-              >
-                Name *
-              </label>
+            <Field>
+              <FieldLabel htmlFor="name">Name *</FieldLabel>
               <Input
                 id="name"
                 placeholder="e.g. Research Assistant"
@@ -122,30 +118,24 @@ export function CreateAgentDialog({
                 onChange={(e) => setName(e.target.value)}
                 required
               />
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <label
-                htmlFor="description"
-                className="text-xs font-medium text-muted-foreground"
-              >
+            <Field>
+              <FieldLabel htmlFor="description">
                 Description (optional)
-              </label>
+              </FieldLabel>
               <Input
                 id="description"
                 placeholder="e.g. Researches documentation and executes safe tools"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <label
-                htmlFor="instructions"
-                className="text-xs font-medium text-foreground"
-              >
+            <Field>
+              <FieldLabel htmlFor="instructions">
                 System Instructions
-              </label>
+              </FieldLabel>
               <Textarea
                 id="instructions"
                 rows={4}
@@ -155,16 +145,11 @@ export function CreateAgentDialog({
                 onChange={(e) => setInstructions(e.target.value)}
                 required
               />
-            </div>
+            </Field>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <label
-                  htmlFor="model"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Model
-                </label>
+              <Field>
+                <FieldLabel htmlFor="model">Model</FieldLabel>
                 <NativeSelect
                   id="model"
                   value={model}
@@ -178,15 +163,10 @@ export function CreateAgentDialog({
                     Gemini 2.5 Pro
                   </NativeSelectOption>
                 </NativeSelect>
-              </div>
+              </Field>
 
-              <div className="grid gap-1.5">
-                <label
-                  htmlFor="maxSteps"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Max Loop Steps
-                </label>
+              <Field>
+                <FieldLabel htmlFor="maxSteps">Max Loop Steps</FieldLabel>
                 <Input
                   id="maxSteps"
                   type="number"
@@ -195,16 +175,11 @@ export function CreateAgentDialog({
                   value={maxSteps}
                   onChange={(e) => setMaxSteps(Number(e.target.value))}
                 />
-              </div>
+              </Field>
             </div>
 
-            <div className="grid gap-1.5">
-              <label
-                htmlFor="autonomy"
-                className="text-xs font-medium text-foreground"
-              >
-                Autonomy Mode
-              </label>
+            <Field>
+              <FieldLabel htmlFor="autonomy">Autonomy Mode</FieldLabel>
               <NativeSelect
                 id="autonomy"
                 value={autonomy}
@@ -215,8 +190,8 @@ export function CreateAgentDialog({
                   Manual (Standard Tool Loop)
                 </NativeSelectOption>
               </NativeSelect>
-            </div>
-          </div>
+            </Field>
+          </FieldGroup>
 
           <DialogFooter>
             <Button
@@ -228,9 +203,7 @@ export function CreateAgentDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending && (
-                <Spinner className="mr-1.5 size-3.5" />
-              )}
+              {createMutation.isPending && <Spinner data-icon="inline-start" />}
               Create Agent
             </Button>
           </DialogFooter>
