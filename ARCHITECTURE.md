@@ -29,6 +29,77 @@ apps/api ──→ @openbots/api-contract ──→ @openbots/db
 - `@openbots/api-contract` and `@openbots/db` are server-only
 - All secrets are server-only — never in `NEXT_PUBLIC_*`
 
+## Database Architecture (`packages/db`)
+
+### Entity-Relationship Model
+
+```
+User (Better Auth)
+│
+├── Agents
+│    │
+│    ├── Agent Tools
+│    │
+│    └── Runs
+│         │
+│         └── Run Steps
+│
+├── Connections
+│
+└── Conversations
+     │
+     ├── Messages
+     │
+     └── Runs
+```
+
+### Tables
+
+| Table | File | Description | Primary Key | Foreign Keys |
+|---|---|---|---|---|
+| `user` | `auth.ts` | Better Auth user table | `id` (text) | — |
+| `session` | `auth.ts` | Better Auth sessions | `id` (text) | `userId` → `user.id` |
+| `account` | `auth.ts` | Better Auth OAuth accounts | `id` (text) | `userId` → `user.id` |
+| `verification` | `auth.ts` | Better Auth tokens | `id` (text) | — |
+| `agents` | `agents.ts` | Persistent AI agent definition & config | `id` (uuid) | `userId` → `user.id` |
+| `agent_tools` | `agent-tools.ts` | Allowed tools per agent | `id` (uuid) | `agentId` → `agents.id` |
+| `connections` | `connections.ts` | User external app connections (no secrets) | `id` (uuid) | `userId` → `user.id` |
+| `conversations` | `conversations.ts` | Conversations between user & agent | `id` (uuid) | `userId` → `user.id`, `agentId` → `agents.id` |
+| `messages` | `messages.ts` | Conversation messages (JSONB content for multi-part) | `id` (uuid) | `conversationId` → `conversations.id` |
+| `runs` | `runs.ts` | Execution instance of an agent | `id` (uuid) | `userId` → `user.id`, `agentId` → `agents.id`, `conversationId` → `conversations.id` |
+| `run_steps` | `run-steps.ts` | Individual model or tool execution steps | `id` (uuid) | `runId` → `runs.id` |
+
+### Key Constraints & Indexes
+
+- **Enums:** `agent_status` (active/paused/archived), `agent_autonomy` (manual/approved/autonomous), `agent_tool_provider` (internal/composio/mcp), `connection_status` (active/disconnected/error), `message_role` (system/user/assistant/tool), `run_status` (queued/running/waiting/completed/failed/cancelled), `run_trigger_type` (manual/schedule/event/webhook), `run_step_type` (model/tool), `run_step_status` (running/completed/failed)
+- **Unique constraints:**
+  - `agent_tools`: `(agent_id, tool_name)`
+  - `connections`: `(user_id, provider, external_account_id)`
+  - `run_steps`: `(run_id, step_number)`
+- **Indexes:**
+  - Every user-owned table has an index on `user_id`
+  - `agents`: `user_id`
+  - `agent_tools`: `agent_id`
+  - `connections`: `user_id`
+  - `conversations`: `user_id`, `agent_id`
+  - `messages`: `(conversation_id, created_at)`
+  - `runs`: `user_id`, `agent_id`, `conversation_id`, `status`, `created_at`
+  - `run_steps`: `(run_id, step_number)`
+
+### Migrations
+
+```bash
+cd packages/db
+bun run db:generate    # Generate migrations into drizzle/
+bun run db:migrate     # Apply migrations
+bun run db:push        # Push schema directly (dev)
+bun run db:studio      # Open Drizzle Studio
+```
+
+Current migrations:
+- `0000_enable_pgvector.sql` — PostgreSQL vector extension initialization
+- `0001_luxuriant_roulette.sql` — OpenBots core product schema (all tables, enums, FKs, indexes, constraints)
+
 ## Route Organization
 
 Each domain follows a three-file convention inside `packages/api-contract/src/routes/`:
@@ -62,14 +133,6 @@ Primary persistent storage. Managed through `packages/db`.
 - **Schemas:** `packages/db/src/schemas/`
 - **Migrations:** `packages/db/drizzle/`
 
-```bash
-cd packages/db
-bun run db:generate    # Generate migrations
-bun run db:migrate     # Apply migrations
-bun run db:push        # Push schema changes
-bun run db:studio      # Open Drizzle Studio
-```
-
 ### Redis — Upstash
 
 Server-side ephemeral infrastructure in `packages/db/src/redis/`. Uses HTTP-based Upstash client.
@@ -96,7 +159,6 @@ Auth handler is mounted on the Hono app at `/api/auth/*`.
 
 - **Connection:** `BETTER_AUTH_SECRET` + `BETTER_AUTH_URL`
 - **Verify:** `GET /api/auth/ok` should return `{ status: "ok" }`
-- **Schema:** Run `bunx auth@latest generate --output packages/db/src/schemas/auth-schema.ts` then `bun run db:push`
 
 ### Composio — External Integrations
 
@@ -120,8 +182,6 @@ Handles long-running agent runs, scheduled tasks, retries, and human-in-the-loop
 ### MCP — Model Context Protocol
 
 `@modelcontextprotocol/sdk` installed in `packages/api-contract` for future tool protocol support. Enables the agent engine to connect to external MCP servers for standardized tool discovery and execution.
-
-No MCP servers or clients are implemented yet.
 
 ## Environment Variables
 
@@ -157,11 +217,3 @@ cd apps/web && bun run dev
 curl http://localhost:3001/api/health
 curl http://localhost:3001/api/auth/ok
 ```
-
-## Adding New Routes
-
-1. Create `packages/api-contract/src/routes/<domain>/<domain>.schema.ts`
-2. Create `packages/api-contract/src/routes/<domain>/<domain>.logic.ts`
-3. Create `packages/api-contract/src/routes/<domain>/<domain>.route.ts`
-4. Mount the route in `packages/api-contract/src/index.ts`
-5. The client picks up the new types automatically via `AppType`
