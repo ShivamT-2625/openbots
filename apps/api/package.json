@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "@openbots/api-contract": "workspace:*",
+    "@trigger.dev/sdk": "^4.6.0",
     "hono": "^4.7.11"
   },
   "devDependencies": {
     "@openbots/typescript-config": "workspace:*",
+    "@trigger.dev/build": "^4.6.0",
     "@types/node": "^20",
     "typescript": "^5"
   }
