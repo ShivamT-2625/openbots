@@ -212,7 +212,7 @@ export function WorkspaceSidebar({
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="px-3">
+      <SidebarHeader className="px-3 group-data-[collapsible=icon]:px-2">
         <BrandRow onClickButton={onOpenCreate} />
 
         <InputGroup className="mt-2 h-8 bg-background shadow-none group-data-[collapsible=icon]:hidden">
@@ -227,7 +227,7 @@ export function WorkspaceSidebar({
         </InputGroup>
       </SidebarHeader>
 
-      <SidebarContent className="mt-1 px-1">
+      <SidebarContent className="mt-1 px-1 group-data-[collapsible=icon]:px-0">
         <SidebarGroup>
           <SidebarGroupContent>
             {filteredAgents.length === 0 ? (
@@ -300,8 +300,6 @@ export function WorkspaceSidebar({
           <SidebarTrigger className="size-8 shrink-0 text-muted-foreground hover:text-foreground" />
         </div>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   )
 }
