@@ -192,7 +192,7 @@ export function ConversationTimeline({
 
             {/* Live Active In-Flight Run Stream */}
             {isActiveRunOngoing && (
-              <MessageScrollerItem scrollAnchor>
+              <MessageScrollerItem>
                 <div className="space-y-3 py-1">
                   {/* Status Indicator using Marker */}
                   <Marker className="text-xs">
@@ -231,7 +231,7 @@ export function ConversationTimeline({
               !isActiveRunOngoing &&
               (activeRun.status === "failed" ||
                 activeRun.status === "cancelled") && (
-                <MessageScrollerItem scrollAnchor>
+                <MessageScrollerItem>
                   <div className="py-1">
                     {activeRun.status === "failed" && activeRun.error && (
                       <Marker className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">

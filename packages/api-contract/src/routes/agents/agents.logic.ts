@@ -49,7 +49,7 @@ export async function createAgent(userId: string, data: CreateAgentInput) {
     })
     .returning();
 
-  // Automatically enable default internal tools (get_current_time, calculate) for newly created agents
+  // Automatically enable default internal tools (get_current_time, calculate, create_schedule) for newly created agents
   if (agent) {
     await db.insert(agentTools).values([
       {
@@ -62,6 +62,12 @@ export async function createAgent(userId: string, data: CreateAgentInput) {
         agentId: agent.id,
         provider: "internal",
         toolName: "calculate",
+        enabled: true,
+      },
+      {
+        agentId: agent.id,
+        provider: "internal",
+        toolName: "create_schedule",
         enabled: true,
       },
     ]);

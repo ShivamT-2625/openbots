@@ -376,8 +376,11 @@ export function ConfigureAgentSheet({
                               "Provides real-time timestamp and timezone calculations."}
                             {tool.toolName === "calculate" &&
                               "Evaluates mathematical expressions safely."}
+                            {tool.toolName === "create_schedule" &&
+                              "Creates recurring scheduled tasks and automated runs."}
                             {tool.toolName !== "get_current_time" &&
                               tool.toolName !== "calculate" &&
+                              tool.toolName !== "create_schedule" &&
                               `External ${tool.provider} tool integration.`}
                           </p>
                         </div>

@@ -2,7 +2,6 @@
 
 import { Badge } from "@openbots/ui/components/badge"
 import { Button } from "@openbots/ui/components/button"
-import { ScrollArea } from "@openbots/ui/components/scroll-area"
 import {
   Sheet,
   SheetContent,
@@ -13,10 +12,24 @@ import {
 } from "@openbots/ui/components/sheet"
 import { Spinner } from "@openbots/ui/components/spinner"
 import {
+  IconBrandAirtable,
+  IconBrandAsana,
+  IconBrandDiscord,
+  IconBrandGithub,
   IconBrandGmail,
+  IconBrandGoogleDrive,
+  IconBrandJira,
   IconBrandNotion,
+  IconBrandSlack,
+  IconBrandSpotify,
+  IconBrandStripe,
+  IconBrandTrello,
+  IconBrandYoutube,
+  IconBrandZoom,
+  IconCalendar,
   IconPlug,
   IconPlus,
+  IconSearch,
   IconTrash,
 } from "@tabler/icons-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -53,10 +66,129 @@ const AVAILABLE_INTEGRATIONS = [
     provider: "composio",
     accountId: "notion_connected_account",
   },
+  {
+    id: "github",
+    name: "GitHub",
+    description:
+      "Manage repositories, pull requests, issues, and code reviews.",
+    icon: IconBrandGithub,
+    provider: "composio",
+    accountId: "github_connected_account",
+  },
+  {
+    id: "slack",
+    name: "Slack",
+    description:
+      "Post messages, read channels, and automate team notifications.",
+    icon: IconBrandSlack,
+    provider: "composio",
+    accountId: "slack_connected_account",
+  },
+  {
+    id: "googlecalendar",
+    name: "Google Calendar",
+    description:
+      "Schedule events, check availability, and manage calendar meetings.",
+    icon: IconCalendar,
+    provider: "composio",
+    accountId: "googlecalendar_connected_account",
+  },
+  {
+    id: "discord",
+    name: "Discord",
+    description:
+      "Send channel messages, trigger webhooks, and interact with servers.",
+    icon: IconBrandDiscord,
+    provider: "composio",
+    accountId: "discord_connected_account",
+  },
+  {
+    id: "googledrive",
+    name: "Google Drive",
+    description: "Search, organize, upload, and read files from Google Drive.",
+    icon: IconBrandGoogleDrive,
+    provider: "composio",
+    accountId: "googledrive_connected_account",
+  },
+  {
+    id: "jira",
+    name: "Jira",
+    description: "Create issues, track sprints, and query development tickets.",
+    icon: IconBrandJira,
+    provider: "composio",
+    accountId: "jira_connected_account",
+  },
+  {
+    id: "trello",
+    name: "Trello",
+    description:
+      "Manage boards, create task cards, and automate project workflows.",
+    icon: IconBrandTrello,
+    provider: "composio",
+    accountId: "trello_connected_account",
+  },
+  {
+    id: "asana",
+    name: "Asana",
+    description:
+      "Coordinate team tasks, project milestones, and assignment statuses.",
+    icon: IconBrandAsana,
+    provider: "composio",
+    accountId: "asana_connected_account",
+  },
+  {
+    id: "airtable",
+    name: "Airtable",
+    description:
+      "Query relational records, add rows, and update spreadsheet databases.",
+    icon: IconBrandAirtable,
+    provider: "composio",
+    accountId: "airtable_connected_account",
+  },
+  {
+    id: "stripe",
+    name: "Stripe",
+    description:
+      "View customer billing, search payments, invoices, and subscriptions.",
+    icon: IconBrandStripe,
+    provider: "composio",
+    accountId: "stripe_connected_account",
+  },
+  {
+    id: "spotify",
+    name: "Spotify",
+    description:
+      "Control playback, browse playlists, and search music libraries.",
+    icon: IconBrandSpotify,
+    provider: "composio",
+    accountId: "spotify_connected_account",
+  },
+  {
+    id: "youtube",
+    name: "YouTube",
+    description: "Search videos, manage playlists, and read channel analytics.",
+    icon: IconBrandYoutube,
+    provider: "composio",
+    accountId: "youtube_connected_account",
+  },
+  {
+    id: "zoom",
+    name: "Zoom",
+    description:
+      "Create video meetings, manage recordings, and access schedule links.",
+    icon: IconBrandZoom,
+    provider: "composio",
+    accountId: "zoom_connected_account",
+  },
 ] as const
 
 const POLL_INTERVAL_MS = 3000
 const POLL_TIMEOUT_MS = 120_000
+
+const SCROLL_CLASS =
+  "min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2 " +
+  "[scrollbar-gutter:stable] [scrollbar-width:thin] " +
+  "[scrollbar-color:color-mix(in_oklab,currentColor_25%,transparent)_transparent]"
 
 export function ConnectionsSheet({
   open,
@@ -64,6 +196,7 @@ export function ConnectionsSheet({
 }: ConnectionsSheetProps) {
   const queryClient = useQueryClient()
   const [pollingEnabled, setPollingEnabled] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState("")
   const baselineCount = React.useRef(0)
   const pollTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -133,6 +266,17 @@ export function ConnectionsSheet({
     },
   })
 
+  const filteredIntegrations = React.useMemo(() => {
+    if (!searchQuery.trim()) return AVAILABLE_INTEGRATIONS
+    const q = searchQuery.toLowerCase()
+    return AVAILABLE_INTEGRATIONS.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q)
+    )
+  }, [searchQuery])
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex flex-col sm:max-w-md">
@@ -142,117 +286,143 @@ export function ConnectionsSheet({
             Integrations & Connections
           </SheetTitle>
           <SheetDescription>
-            Connect your tools so your agents can take real actions on your
-            behalf.
+            Connect your SaaS tools so your agents can take real actions across
+            popular apps.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-hidden px-4">
-          {/* Integrations */}
-          <section className="grid gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden px-4">
+          {/* Integrations with search */}
+          <section className="flex min-h-0 flex-[3] flex-col gap-2.5">
             <h3 className="text-xs font-medium text-muted-foreground">
-              Integrations
+              Supported integrations ({AVAILABLE_INTEGRATIONS.length})
             </h3>
-            <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-              {AVAILABLE_INTEGRATIONS.map((integration) => {
-                const Icon = integration.icon
-                const activeConn = connections.find(
-                  (c) =>
-                    c.externalAccountId === integration.accountId ||
-                    c.provider === integration.id ||
-                    c.externalAccountId.toLowerCase().includes(integration.id)
-                )
-                const isConnected = !!activeConn
-                const isWaitingForAuth =
-                  pollingEnabled &&
-                  !isConnected &&
-                  connectMutation.variables?.appName === integration.id
-                const isPending =
-                  (connectMutation.isPending &&
-                    connectMutation.variables?.appName === integration.id) ||
-                  isWaitingForAuth ||
-                  (deleteMutation.isPending &&
-                    deleteMutation.variables === activeConn?.id)
 
-                return (
-                  <div
-                    key={integration.id}
-                    className="flex items-center gap-3 px-3.5 py-3"
-                  >
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                      <Icon className="size-5" />
-                    </div>
+            <div className="relative shrink-0">
+              <IconSearch className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search apps (GitHub, Slack, Drive...)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 w-full rounded-md border border-input bg-transparent pr-3 pl-8 text-xs shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+              />
+            </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {integration.name}
-                        </span>
-                        {isConnected && (
-                          <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                            <span className="size-1.5 rounded-full bg-emerald-500" />
-                            Connected
-                          </span>
+            {/* Native scroll container: min-h-0 lets it shrink inside the flex column */}
+            <div className={SCROLL_CLASS}>
+              <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                {filteredIntegrations.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    No apps match &ldquo;{searchQuery}&rdquo;
+                  </div>
+                ) : (
+                  filteredIntegrations.map((integration) => {
+                    const Icon = integration.icon
+                    const activeConn = connections.find(
+                      (c) =>
+                        c.externalAccountId === integration.accountId ||
+                        c.provider === integration.id ||
+                        c.externalAccountId
+                          .toLowerCase()
+                          .includes(integration.id)
+                    )
+                    const isConnected = !!activeConn
+                    const isWaitingForAuth =
+                      pollingEnabled &&
+                      !isConnected &&
+                      connectMutation.variables?.appName === integration.id
+                    const isPending =
+                      (connectMutation.isPending &&
+                        connectMutation.variables?.appName ===
+                          integration.id) ||
+                      isWaitingForAuth ||
+                      (deleteMutation.isPending &&
+                        deleteMutation.variables === activeConn?.id)
+
+                    return (
+                      <div
+                        key={integration.id}
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                          <Icon className="size-4.5" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-foreground">
+                              {integration.name}
+                            </span>
+                            {isConnected && (
+                              <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                                <span className="size-1.5 rounded-full bg-emerald-500" />
+                                Connected
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-muted-foreground">
+                            {isWaitingForAuth
+                              ? "Finish signing in in the new tab…"
+                              : integration.description}
+                          </p>
+                        </div>
+
+                        {isConnected ? (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="shrink-0 gap-1 text-[11px]"
+                            onClick={() => deleteMutation.mutate(activeConn.id)}
+                            disabled={isPending}
+                          >
+                            {isPending && <Spinner className="size-3" />}
+                            Disconnect
+                          </Button>
+                        ) : (
+                          <Button
+                            size="xs"
+                            className="shrink-0 gap-1 text-[11px]"
+                            onClick={() =>
+                              connectMutation.mutate({
+                                appName: integration.id,
+                              })
+                            }
+                            disabled={isPending}
+                          >
+                            {isPending ? (
+                              <Spinner className="size-3" />
+                            ) : (
+                              <IconPlus className="size-3" />
+                            )}
+                            Connect
+                          </Button>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-                        {isWaitingForAuth
-                          ? "Finish signing in in the new tab…"
-                          : integration.description}
-                      </p>
-                    </div>
-
-                    {isConnected ? (
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        className="shrink-0 gap-1 text-xs"
-                        onClick={() => deleteMutation.mutate(activeConn.id)}
-                        disabled={isPending}
-                      >
-                        {isPending && <Spinner className="size-3" />}
-                        Disconnect
-                      </Button>
-                    ) : (
-                      <Button
-                        size="xs"
-                        className="shrink-0 gap-1 text-xs"
-                        onClick={() =>
-                          connectMutation.mutate({ appName: integration.id })
-                        }
-                        disabled={isPending}
-                      >
-                        {isPending ? (
-                          <Spinner className="size-3" />
-                        ) : (
-                          <IconPlus className="size-3" />
-                        )}
-                        Connect
-                      </Button>
-                    )}
-                  </div>
-                )
-              })}
+                    )
+                  })
+                )}
+              </div>
             </div>
           </section>
 
           {/* Connected accounts */}
-          <section className="flex min-h-0 flex-1 flex-col gap-2">
+          <section className="flex min-h-0 flex-5 flex-col gap-2">
             <h3 className="text-xs font-medium text-muted-foreground">
               Connected accounts ({connections.length})
             </h3>
-            <ScrollArea className="flex-1">
+            <div className={SCROLL_CLASS}>
               {isLoading ? (
                 <div className="flex items-center justify-center p-8">
                   <Spinner className="size-5" />
                 </div>
               ) : connections.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-                  Nothing connected yet. Connect Gmail or Notion above to give
-                  your agents access.
+                  Nothing connected yet. Connect an app above to give your
+                  agents access.
                 </div>
               ) : (
-                <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                <div className="mb-10 divide-y divide-border overflow-hidden rounded-xl border border-border">
                   {connections.map((c) => {
                     const rowPending =
                       deleteMutation.isPending &&
@@ -297,20 +467,9 @@ export function ConnectionsSheet({
                   })}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </section>
         </div>
-
-        <SheetFooter className="border-t border-border p-3">
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full text-xs"
-            onClick={() => onOpenChange(false)}
-          >
-            Close
-          </Button>
-        </SheetFooter>
       </SheetContent>
     </Sheet>
   )

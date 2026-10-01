@@ -1,14 +1,7 @@
-"use client";
+"use client"
 
-import { Badge } from "@openbots/ui/components/badge";
-import { Button } from "@openbots/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@openbots/ui/components/card";
-import { ScrollArea } from "@openbots/ui/components/scroll-area";
+import { Button } from "@openbots/ui/components/button"
+import { ScrollArea } from "@openbots/ui/components/scroll-area"
 import {
   Sheet,
   SheetContent,
@@ -16,116 +9,161 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@openbots/ui/components/sheet";
-
-import { Spinner } from "@openbots/ui/components/spinner";
+} from "@openbots/ui/components/sheet"
+import { Spinner } from "@openbots/ui/components/spinner"
 import {
-  IconAlertCircle,
   IconArrowLeft,
-  IconCheck,
-  IconClock,
+  IconChevronRight,
   IconHistory,
   IconPlayerStop,
-  IconX,
-} from "@tabler/icons-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as React from "react";
-import { getClient } from "@/lib/api";
-import { ExecutionStepsCard, type StepItem } from "./execution-steps-card";
+} from "@tabler/icons-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import * as React from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { getClient } from "@/lib/api"
+import { ExecutionStepsCard, type StepItem } from "./execution-steps-card"
 
 export type RunRecord = {
-  id: string;
-  userId: string;
-  agentId: string;
-  conversationId: string | null;
+  id: string
+  userId: string
+  agentId: string
+  conversationId: string | null
   status:
-    | "queued"
-    | "running"
-    | "waiting"
-    | "completed"
-    | "failed"
-    | "cancelled";
-  triggerType: string;
-  input: unknown;
-  output: unknown;
-  error: string | null;
-  startedAt: string | Date | null;
-  completedAt: string | Date | null;
-  createdAt: string | Date;
-};
-
-interface RunHistorySheetProps {
-  agentId: string | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  selectedRunId?: string | null;
-  onSelectRunId?: (runId: string | null) => void;
+    "queued" | "running" | "waiting" | "completed" | "failed" | "cancelled"
+  triggerType: string
+  input: unknown
+  output: unknown
+  error: string | null
+  startedAt: string | Date | null
+  completedAt: string | Date | null
+  createdAt: string | Date
 }
 
+interface RunHistorySheetProps {
+  agentId: string | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  selectedRunId?: string | null
+  onSelectRunId?: (runId: string | null) => void
+}
+
+/* ---------- helpers ---------- */
+
 function formatTimestamp(dateVal: string | Date | null | undefined): string {
-  if (!dateVal) return "N/A";
+  if (!dateVal) return "—"
   try {
-    const d = new Date(dateVal);
-    return d.toLocaleString([], {
+    return new Date(dateVal).toLocaleString([], {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    });
+    })
   } catch {
-    return String(dateVal);
+    return String(dateVal)
   }
 }
 
-function getStatusBadge(status: RunRecord["status"]) {
-  switch (status) {
-    case "completed":
-      return (
-        <Badge variant="secondary" className="gap-1 text-[10px]">
-          <IconCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
-          Completed
-        </Badge>
-      );
-    case "running":
-      return (
-        <Badge variant="outline" className="gap-1 text-[10px]">
-          <Spinner className="size-2.5" />
-          Running
-        </Badge>
-      );
-    case "queued":
-      return (
-        <Badge variant="outline" className="gap-1 text-[10px]">
-          <IconClock className="size-3" />
-          Queued
-        </Badge>
-      );
-    case "cancelled":
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 text-[10px] text-muted-foreground"
-        >
-          <IconX className="size-3" />
-          Cancelled
-        </Badge>
-      );
-    case "failed":
-      return (
-        <Badge variant="destructive" className="gap-1 text-[10px]">
-          <IconAlertCircle className="size-3" />
-          Failed
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="outline" className="text-[10px]">
-          {status}
-        </Badge>
-      );
-  }
+function formatDuration(
+  start: string | Date | null | undefined,
+  end: string | Date | null | undefined
+): string {
+  if (!start || !end) return "—"
+  const ms = new Date(end).getTime() - new Date(start).getTime()
+  if (Number.isNaN(ms) || ms < 0) return "—"
+  const s = Math.round(ms / 1000)
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  return `${m}m ${s % 60}s`
 }
+
+function toText(value: unknown, keys: string[], fallback = ""): string {
+  if (value === null || value === undefined) return fallback
+  if (typeof value === "string") return value
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>
+    for (const key of keys) {
+      if (typeof obj[key] === "string") return obj[key] as string
+    }
+    return JSON.stringify(obj, null, 2)
+  }
+  return String(value)
+}
+
+const getInputText = (input: unknown, fallback = "") =>
+  toText(input, ["prompt", "text"], fallback)
+const getOutputText = (output: unknown) => toText(output, ["text"])
+
+const STATUS_META: Record<
+  RunRecord["status"],
+  { label: string; dot: string; text: string }
+> = {
+  completed: {
+    label: "Completed",
+    dot: "bg-emerald-500",
+    text: "text-emerald-600 dark:text-emerald-400",
+  },
+  running: { label: "Running", dot: "", text: "text-foreground" },
+  queued: {
+    label: "Queued",
+    dot: "bg-muted-foreground/50",
+    text: "text-muted-foreground",
+  },
+  waiting: {
+    label: "Waiting",
+    dot: "bg-amber-500",
+    text: "text-amber-600 dark:text-amber-400",
+  },
+  cancelled: {
+    label: "Cancelled",
+    dot: "bg-muted-foreground/50",
+    text: "text-muted-foreground",
+  },
+  failed: {
+    label: "Failed",
+    dot: "bg-destructive",
+    text: "text-destructive",
+  },
+}
+
+function StatusLabel({ status }: { status: RunRecord["status"] }) {
+  const meta = STATUS_META[status] ?? {
+    label: status,
+    dot: "bg-muted-foreground/50",
+    text: "text-muted-foreground",
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 text-xs font-medium ${meta.text}`}
+    >
+      {status === "running" ? (
+        <Spinner className="size-3" />
+      ) : (
+        <span className={`size-1.5 rounded-full ${meta.dot}`} />
+      )}
+      {meta.label}
+    </span>
+  )
+}
+
+const Markdown = React.memo(function Markdown({
+  children,
+}: {
+  children: string
+}) {
+  return <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+})
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+      {children}
+    </h3>
+  )
+}
+
+/* ---------- component ---------- */
 
 export function RunHistorySheet({
   agentId,
@@ -134,67 +172,62 @@ export function RunHistorySheet({
   selectedRunId: externalSelectedRunId,
   onSelectRunId: externalOnSelectRunId,
 }: RunHistorySheetProps) {
-  const queryClient = useQueryClient();
-  const [internalRunId, setInternalRunId] = React.useState<string | null>(null);
+  const queryClient = useQueryClient()
+  const [internalRunId, setInternalRunId] = React.useState<string | null>(null)
 
   const inspectedRunId =
-    externalSelectedRunId !== undefined ? externalSelectedRunId : internalRunId;
-  const setInspectedRunId = externalOnSelectRunId || setInternalRunId;
+    externalSelectedRunId !== undefined ? externalSelectedRunId : internalRunId
+  const setInspectedRunId = externalOnSelectRunId || setInternalRunId
 
-  // Query runs for this agent
   const { data: runsData, isLoading: isLoadingRuns } = useQuery({
     queryKey: ["runs", agentId],
     queryFn: async () => {
-      if (!agentId) return { runs: [] };
-      const client = getClient();
-      const res = await client.api.runs.$get({
-        query: { agentId },
-      });
-      if (!res.ok) throw new Error("Failed to fetch runs");
-      return res.json() as Promise<{ runs: RunRecord[] }>;
+      if (!agentId) return { runs: [] }
+      const client = getClient()
+      const res = await client.api.runs.$get({ query: { agentId } })
+      if (!res.ok) throw new Error("Failed to fetch runs")
+      return res.json() as Promise<{ runs: RunRecord[] }>
     },
     enabled: open && !!agentId,
-  });
+  })
 
-  // Query details for inspected run
   const { data: inspectedRunData, isLoading: isLoadingInspected } = useQuery({
     queryKey: ["run", inspectedRunId],
     queryFn: async () => {
-      if (!inspectedRunId) return null;
-      const client = getClient();
+      if (!inspectedRunId) return null
+      const client = getClient()
       const res = await client.api.runs[":id"].$get({
         param: { id: inspectedRunId },
-      });
-      if (!res.ok) throw new Error("Failed to fetch run details");
-      return res.json() as Promise<{ run: RunRecord; steps: StepItem[] }>;
+      })
+      if (!res.ok) throw new Error("Failed to fetch run details")
+      return res.json() as Promise<{ run: RunRecord; steps: StepItem[] }>
     },
     enabled: open && !!inspectedRunId,
     refetchInterval: (query) => {
-      const status = query.state.data?.run?.status;
-      return status === "queued" || status === "running" ? 1500 : false;
+      const status = query.state.data?.run?.status
+      return status === "queued" || status === "running" ? 1500 : false
     },
-  });
+  })
 
-  // Cancel mutation
   const cancelMutation = useMutation({
     mutationFn: async (runId: string) => {
-      const client = getClient();
+      const client = getClient()
       const res = await client.api.runs[":id"].cancel.$post({
         param: { id: runId },
-      });
-      if (!res.ok) throw new Error("Failed to cancel run");
-      return res.json();
+      })
+      if (!res.ok) throw new Error("Failed to cancel run")
+      return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["run", inspectedRunId] });
-      queryClient.invalidateQueries({ queryKey: ["runs", agentId] });
+      queryClient.invalidateQueries({ queryKey: ["run", inspectedRunId] })
+      queryClient.invalidateQueries({ queryKey: ["runs", agentId] })
     },
-  });
+  })
 
-  const run = inspectedRunData?.run;
-  const steps = inspectedRunData?.steps || [];
+  const run = inspectedRunData?.run
+  const steps = inspectedRunData?.steps || []
   const isInspectedActive =
-    run?.status === "queued" || run?.status === "running";
+    run?.status === "queued" || run?.status === "running"
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -213,166 +246,147 @@ export function RunHistorySheet({
             )}
             <SheetTitle className="flex items-center gap-2">
               <IconHistory className="size-4" />
-              {inspectedRunId ? "Execution Inspector" : "Run History"}
+              {inspectedRunId ? "Run details" : "Run history"}
             </SheetTitle>
           </div>
           <SheetDescription>
             {inspectedRunId
-              ? "Inspect the persisted prompt, tool execution steps, and response."
-              : "Review past and active runs for this agent."}
+              ? "See the task, each tool step, and the final response."
+              : "Past and active runs for this agent."}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-hidden pt-2">
-          {inspectedRunId ? (
-            // Inspected Run Detail View
-            <ScrollArea className="h-[calc(100vh-140px)] pr-2">
-              {isLoadingInspected ? (
-                <div className="flex items-center justify-center p-8">
-                  <Spinner className="size-5" />
-                </div>
-              ) : !run ? (
-                <p className="text-xs text-muted-foreground">Run not found.</p>
-              ) : (
-                <div className="space-y-4 text-xs">
-                  {/* Status & Cancel Header */}
-                  <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 p-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">
-                          Status:
-                        </span>
-                        {getStatusBadge(run.status)}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Started:{" "}
-                        {formatTimestamp(run.startedAt || run.createdAt)}
-                        {run.completedAt &&
-                          ` • Finished: ${formatTimestamp(run.completedAt)}`}
-                      </div>
-                    </div>
+        <div className="flex min-h-0 flex-1 flex-col px-4">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="pr-3 pb-4">
+              {inspectedRunId ? (
+                isLoadingInspected ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Spinner className="size-5" />
                   </div>
-
-                  {/* Input Task Card */}
-
-                  <Card size="sm">
-                    <CardHeader className="py-2.5">
-                      <CardTitle className="text-xs">User Task</CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-2.5">
-                      <p className="text-xs text-foreground whitespace-pre-wrap">
-                        {typeof run.input === "string"
-                          ? run.input
-                          : typeof (run.input as Record<string, unknown>)
-                                ?.prompt === "string"
-                            ? String(
-                                (run.input as Record<string, unknown>).prompt,
-                              )
-                            : JSON.stringify(run.input, null, 2)}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tool Execution Steps */}
-                  <div>
-                    <h4 className="mb-1.5 font-medium text-foreground">
-                      Execution Steps
-                    </h4>
-                    <ExecutionStepsCard
-                      steps={steps}
-                      isLive={isInspectedActive}
-                    />
-                  </div>
-
-                  {/* Output or Error */}
-                  {Boolean(run.error) && (
-                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive">
-                      <div className="font-semibold">Error</div>
-                      <div className="mt-1 font-mono text-[11px] whitespace-pre-wrap">
-                        {run.error}
+                ) : !run ? (
+                  <p className="py-8 text-center text-xs text-muted-foreground">
+                    Run not found.
+                  </p>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Summary */}
+                    <dl className="divide-y divide-border overflow-hidden rounded-xl border border-border text-xs">
+                      <div className="flex items-center justify-between px-3.5 py-2.5">
+                        <dt className="text-muted-foreground">Status</dt>
+                        <dd>
+                          <StatusLabel status={run.status} />
+                        </dd>
                       </div>
-                    </div>
-                  )}
+                      <div className="flex items-center justify-between px-3.5 py-2.5">
+                        <dt className="text-muted-foreground">Started</dt>
+                        <dd className="text-foreground">
+                          {formatTimestamp(run.startedAt || run.createdAt)}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between px-3.5 py-2.5">
+                        <dt className="text-muted-foreground">Finished</dt>
+                        <dd className="text-foreground">
+                          {formatTimestamp(run.completedAt)}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between px-3.5 py-2.5">
+                        <dt className="text-muted-foreground">Duration</dt>
+                        <dd className="text-foreground">
+                          {formatDuration(
+                            run.startedAt || run.createdAt,
+                            run.completedAt
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
 
-                  {Boolean(run.output) && (
-                    <Card size="sm">
-                      <CardHeader className="py-2.5">
-                        <CardTitle className="text-xs">
-                          Final Response
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="py-2.5">
-                        <div className="text-xs text-foreground whitespace-pre-wrap">
-                          {typeof run.output === "string"
-                            ? run.output
-                            : typeof (run.output as Record<string, unknown>)
-                                  ?.text === "string"
-                              ? String(
-                                  (run.output as Record<string, unknown>).text,
-                                )
-                              : JSON.stringify(run.output, null, 2)}
+                    {/* Task */}
+                    <section>
+                      <SectionLabel>Task</SectionLabel>
+                      <div className="rounded-xl bg-muted px-3.5 py-3 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                        {getInputText(run.input)}
+                      </div>
+                    </section>
+
+                    {/* Steps */}
+                    <section>
+                      <SectionLabel>
+                        Steps{steps.length > 0 && ` (${steps.length})`}
+                      </SectionLabel>
+                      <ExecutionStepsCard
+                        steps={steps}
+                        isLive={isInspectedActive}
+                      />
+                    </section>
+
+                    {/* Error */}
+                    {Boolean(run.error) && (
+                      <section>
+                        <SectionLabel>Error</SectionLabel>
+                        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-3.5 py-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-destructive">
+                          {run.error}
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
-            </ScrollArea>
-          ) : (
-            // Runs List View
-            <ScrollArea className="h-[calc(100vh-140px)] pr-2">
-              {isLoadingRuns ? (
+                      </section>
+                    )}
+
+                    {/* Response */}
+                    {Boolean(run.output) && (
+                      <section>
+                        <SectionLabel>Response</SectionLabel>
+                        <div className="rounded-xl border border-border px-3.5 py-3">
+                          <div className="typeset typeset-chat text-sm text-foreground">
+                            <Markdown>{getOutputText(run.output)}</Markdown>
+                          </div>
+                        </div>
+                      </section>
+                    )}
+                  </div>
+                )
+              ) : isLoadingRuns ? (
                 <div className="flex items-center justify-center p-8">
                   <Spinner className="size-5" />
                 </div>
               ) : !runsData?.runs?.length ? (
-                <div className="py-12 text-center text-xs text-muted-foreground">
-                  No runs recorded for this agent yet.
+                <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-xs text-muted-foreground">
+                  No runs yet. Send this agent a task and it will show up here.
                 </div>
               ) : (
-                <div className="space-y-2.5">
-                  {runsData.runs.map((r) => {
-                    const promptText =
-                      typeof r.input === "string"
-                        ? r.input
-                        : typeof (r.input as Record<string, unknown>)
-                              ?.prompt === "string"
-                          ? String((r.input as Record<string, unknown>).prompt)
-                          : "Manual Run";
-
-                    return (
-                      <Card
-                        key={r.id}
-                        size="sm"
-                        className="cursor-pointer transition-colors hover:bg-muted/40"
+                <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                  {runsData.runs.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
                         onClick={() => setInspectedRunId(r.id)}
+                        className="group flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       >
-                        <CardContent className="space-y-1.5 p-3">
-                          <div className="flex items-center justify-between">
-                            {getStatusBadge(r.status)}
-                            <span className="text-[10px] text-muted-foreground">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <StatusLabel status={r.status} />
+                            <span className="text-[11px] text-muted-foreground">
                               {formatTimestamp(r.createdAt)}
                             </span>
                           </div>
-                          <p className="line-clamp-2 text-xs font-medium text-foreground">
-                            {promptText}
+                          <p className="line-clamp-2 text-sm text-foreground">
+                            {getInputText(r.input, "Manual run")}
                           </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                        </div>
+                        <IconChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </ScrollArea>
-          )}
+            </div>
+          </ScrollArea>
         </div>
 
         {inspectedRunId && isInspectedActive && run && (
-          <SheetFooter className="border-t border-border/60 bg-background/80 p-3">
+          <SheetFooter className="border-t border-border p-3">
             <Button
               variant="destructive"
               size="sm"
-              className="w-full h-8 text-xs gap-1.5"
+              className="h-8 w-full gap-1.5 text-xs"
               onClick={() => cancelMutation.mutate(run.id)}
               disabled={cancelMutation.isPending}
             >
@@ -381,11 +395,11 @@ export function RunHistorySheet({
               ) : (
                 <IconPlayerStop className="size-3.5" />
               )}
-              Cancel Run
+              Cancel run
             </Button>
           </SheetFooter>
         )}
       </SheetContent>
     </Sheet>
-  );
+  )
 }
