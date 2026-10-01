@@ -1,11 +1,35 @@
 {
   "version": 1,
   "skills": {
+    "ai-sdk": {
+      "source": "vercel/ai",
+      "sourceType": "github",
+      "skillPath": "skills/use-ai-sdk/SKILL.md",
+      "computedHash": "d6910e7d8bb527d2823ba58b6225b304ae649c135fc7e43ec2d2152251c218db"
+    },
+    "better-auth-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "better-auth/best-practices/SKILL.md",
+      "computedHash": "0c30be0e118c2b7a0c4c57bd9e63bf110c7e420a79ec6ce7997153f3b1e066ee"
+    },
     "biomejs": {
       "source": "aiko-atami/biomejs-skill",
       "sourceType": "github",
       "skillPath": "skills/biomejs/SKILL.md",
       "computedHash": "547c94e012fdcb9b23994e46ca788c27ab42620f8c92d041ca86d1ae62f717b1"
+    },
+    "composio": {
+      "source": "composio-community/skills",
+      "sourceType": "github",
+      "skillPath": "skills/composio/SKILL.md",
+      "computedHash": "11b975f122ecbf455b437e4e42ebf8f30fad84220894c3d52549eefea92a7795"
+    },
+    "trigger-setup": {
+      "source": "triggerdotdev/skills",
+      "sourceType": "github",
+      "skillPath": "trigger-setup/SKILL.md",
+      "computedHash": "d05b406ad44a0190208e6258525fd78c931cbcbb4ead4a5ec6fb82114fae7724"
     }
   }
 }
